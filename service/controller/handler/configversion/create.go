@@ -22,7 +22,6 @@ func (h *Handler) EnsureCreated(ctx context.Context, obj interface{}) error {
 		h.logger.Debugf(ctx, "cancelling handler")
 		return nil
 	}
-	h.logger.Debugf(ctx, "setting App %#q config version", app.Spec.Name)
 
 	if app.Spec.Catalog == "" {
 		h.logger.Debugf(ctx, "App CR %#q has no .Spec.Catalog set", app.Name)
@@ -30,7 +29,13 @@ func (h *Handler) EnsureCreated(ctx context.Context, obj interface{}) error {
 		return nil
 	}
 
-	// TODO: What about releases - is it `index.yaml`? Will catalog=repo_name be correct?
+	if app.Spec.Catalog == "releases" {
+		h.logger.Debugf(ctx, "App CR %#q has a \"releases\" catalog set", app.Name)
+		h.logger.Debugf(ctx, "cancelling handler")
+		return nil
+	}
+
+	h.logger.Debugf(ctx, "setting App %#q config version", app.Spec.Name)
 
 	h.logger.Debugf(ctx, "resolving config version for App %#q from %#q catalog", app.Name, app.Spec.Catalog)
 	var configVersion string
@@ -47,7 +52,7 @@ func (h *Handler) EnsureCreated(ctx context.Context, obj interface{}) error {
 			return microerror.Mask(err)
 		}
 
-		err := yaml.Unmarshal(indexYamlBytes, &index)
+		err = yaml.Unmarshal(indexYamlBytes, &index)
 		if err != nil {
 			return microerror.Mask(err)
 		}
@@ -70,7 +75,7 @@ func (h *Handler) EnsureCreated(ctx context.Context, obj interface{}) error {
 	annotations[annotation.ConfigVersion] = configVersion
 	app.SetAnnotations(annotations)
 
-	err = h.k8sClient.CtrlClient().Update(ctx, app)
+	err = h.k8sClient.CtrlClient().Update(ctx, &app)
 	if err != nil {
 		return microerror.Mask(err)
 	}
