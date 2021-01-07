@@ -31,6 +31,17 @@ func (h *Handler) EnsureCreated(ctx context.Context, obj interface{}) error {
 		return nil
 	}
 
+	if configVersion == "0.0.0" {
+		h.logger.Debugf(ctx, "App CR %#q has config version %#q", app.Name, configVersion)
+		if _, ok := app.GetAnnotations()[PauseAnnotation]; ok {
+			err = h.removeAnnotation(ctx, &app, PauseAnnotation)
+			if err != nil {
+				return err
+			}
+		}
+		h.logger.Debugf(ctx, "cancelling handler")
+	}
+
 	h.logger.Debugf(ctx, "generating app %#q config version %#q", app.Spec.Name, configVersion)
 	configmap, secret, err := h.generateConfig(ctx, h.installation, app.Namespace, app.Spec.Name, configVersion)
 	if err != nil {

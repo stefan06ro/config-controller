@@ -33,6 +33,17 @@ func (h *Handler) EnsureDeleted(ctx context.Context, obj interface{}) error {
 		return nil
 	}
 
+	if configVersion == "0.0.0" {
+		h.logger.Debugf(ctx, "App CR %#q has config version %#q", app.Name, configVersion)
+		if _, ok := app.GetAnnotations()[PauseAnnotation]; ok {
+			err = h.removeAnnotation(ctx, &app, PauseAnnotation)
+			if err != nil {
+				return err
+			}
+		}
+		h.logger.Debugf(ctx, "cancelling handler")
+	}
+
 	cm := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      app.Spec.Config.ConfigMap.Name,
