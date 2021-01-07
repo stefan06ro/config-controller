@@ -15,6 +15,7 @@ import (
 
 	"github.com/giantswarm/config-controller/pkg/label"
 	"github.com/giantswarm/config-controller/pkg/project"
+	"github.com/giantswarm/config-controller/service/controller/handler/configversion"
 	"github.com/giantswarm/config-controller/service/controller/handler/values"
 )
 
@@ -72,6 +73,21 @@ func NewApp(config AppConfig) (*App, error) {
 func newAppResources(config AppConfig) ([]resource.Interface, error) {
 	var err error
 
+	var configversionResource resource.Interface
+	{
+		c := configversion.Config{
+			K8sClient: config.K8sClient,
+			Logger:    config.Logger,
+
+			GitHubToken: config.GitHubToken,
+		}
+
+		configversionResource, err = configversion.New(c)
+		if err != nil {
+			return nil, microerror.Mask(err)
+		}
+	}
+
 	var valuesResource resource.Interface
 	{
 		c := values.Config{
@@ -91,6 +107,7 @@ func newAppResources(config AppConfig) ([]resource.Interface, error) {
 	}
 
 	resources := []resource.Interface{
+		configversionResource,
 		valuesResource,
 	}
 
