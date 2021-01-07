@@ -20,7 +20,7 @@ func (h *Handler) EnsureCreated(ctx context.Context, obj interface{}) error {
 
 	configVersion, ok := app.GetAnnotations()[annotation.ConfigVersion]
 	if !ok {
-		h.logger.Debugf(ctx, "App CR %q is missing %q annotation", app.Name, annotation.ConfigVersion)
+		h.logger.Debugf(ctx, "App CR %#q is missing %#q annotation", app.Name, annotation.ConfigVersion)
 		if _, ok := app.GetAnnotations()[PauseAnnotation]; ok {
 			err = h.removeAnnotation(ctx, &app, PauseAnnotation)
 			if err != nil {
