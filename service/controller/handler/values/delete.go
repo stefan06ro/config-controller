@@ -19,28 +19,20 @@ func (h *Handler) EnsureDeleted(ctx context.Context, obj interface{}) error {
 	if err != nil {
 		return microerror.Mask(err)
 	}
+	annotations := app.GetAnnotations()
+	if annotations == nil {
+		annotations = map[string]string{}
+	}
 
-	configVersion, ok := app.GetAnnotations()[annotation.ConfigVersion]
+	configVersion, ok := annotations[annotation.ConfigVersion]
 	if !ok {
-		h.logger.Debugf(ctx, "App CR %q is missing %q annotation", app.Name, annotation.ConfigVersion)
-		if _, ok := app.GetAnnotations()[PauseAnnotation]; ok {
-			err = h.removeAnnotation(ctx, &app, PauseAnnotation)
-			if err != nil {
-				return err
-			}
-		}
+		h.logger.Debugf(ctx, "App CR is missing %q annotation", annotation.ConfigVersion)
 		h.logger.Debugf(ctx, "cancelling handler")
 		return nil
 	}
 
 	if configVersion == "0.0.0" {
-		h.logger.Debugf(ctx, "App CR %#q has config version %#q", app.Name, configVersion)
-		if _, ok := app.GetAnnotations()[PauseAnnotation]; ok {
-			err = h.removeAnnotation(ctx, &app, PauseAnnotation)
-			if err != nil {
-				return err
-			}
-		}
+		h.logger.Debugf(ctx, "App CR has config version %#q", configVersion)
 		h.logger.Debugf(ctx, "cancelling handler")
 	}
 

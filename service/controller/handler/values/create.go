@@ -17,23 +17,21 @@ func (h *Handler) EnsureCreated(ctx context.Context, obj interface{}) error {
 	if err != nil {
 		return microerror.Mask(err)
 	}
+	annotations := app.GetAnnotations()
+	if annotations == nil {
+		annotations = map[string]string{}
+	}
 
-	configVersion, ok := app.GetAnnotations()[annotation.ConfigVersion]
+	configVersion, ok := annotations[annotation.ConfigVersion]
 	if !ok {
-		h.logger.Debugf(ctx, "App CR %#q is missing %#q annotation", app.Name, annotation.ConfigVersion)
-		if _, ok := app.GetAnnotations()[PauseAnnotation]; ok {
-			err = h.removeAnnotation(ctx, &app, PauseAnnotation)
-			if err != nil {
-				return err
-			}
-		}
+		h.logger.Debugf(ctx, "App CR is missing %q annotation", annotation.ConfigVersion)
 		h.logger.Debugf(ctx, "cancelling handler")
 		return nil
 	}
 
 	if configVersion == "0.0.0" {
-		h.logger.Debugf(ctx, "App CR %#q has config version %#q", app.Name, configVersion)
-		if _, ok := app.GetAnnotations()[PauseAnnotation]; ok {
+		h.logger.Debugf(ctx, "App CR has config version %#q", configVersion)
+		if _, ok := annotations[PauseAnnotation]; ok {
 			err = h.removeAnnotation(ctx, &app, PauseAnnotation)
 			if err != nil {
 				return err
@@ -83,7 +81,7 @@ func (h *Handler) EnsureCreated(ctx context.Context, obj interface{}) error {
 	}
 	if !reflect.DeepEqual(app.Spec.Config.ConfigMap, configmapReference) || !reflect.DeepEqual(app.Spec.Config.Secret, secretReference) {
 		h.logger.Debugf(ctx, "updating App CR %#q with configmap and secret details", app.Name)
-		app.SetAnnotations(removeAnnotation(app.GetAnnotations(), PauseAnnotation))
+		app.SetAnnotations(removeAnnotation(annotations, PauseAnnotation))
 		app.Spec.Config.ConfigMap = configmapReference
 		app.Spec.Config.Secret = secretReference
 		err = h.k8sClient.CtrlClient().Update(ctx, &app)
