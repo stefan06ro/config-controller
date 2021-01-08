@@ -34,12 +34,12 @@ func (h *Handler) EnsureCreated(ctx context.Context, obj interface{}) error {
 		h.logger.Debugf(ctx, "cancelling handler")
 	}
 
-	h.logger.Debugf(ctx, "generating app %#q config version %#q", app.Spec.Name, configVersion)
+	h.logger.Debugf(ctx, "generating app config version %#q", configVersion)
 	configmap, secret, err := h.generateConfig(ctx, h.installation, app.Namespace, app.Spec.Name, configVersion)
 	if err != nil {
 		return microerror.Mask(err)
 	}
-	h.logger.Debugf(ctx, "generated app %#q config version %#q", app.Spec.Name, configVersion)
+	h.logger.Debugf(ctx, "generated app config version %#q", configVersion)
 
 	h.logger.Debugf(ctx, "ensuring configmap %s/%s", configmap.Namespace, configmap.Name)
 	err = h.k8sClient.CtrlClient().Create(ctx, configmap)
@@ -74,7 +74,7 @@ func (h *Handler) EnsureCreated(ctx context.Context, obj interface{}) error {
 		Name:      secret.Name,
 	}
 	if !reflect.DeepEqual(app.Spec.Config.ConfigMap, configmapReference) || !reflect.DeepEqual(app.Spec.Config.Secret, secretReference) {
-		h.logger.Debugf(ctx, "updating App CR %#q with configmap and secret details", app.Name)
+		h.logger.Debugf(ctx, "updating App CR with configmap and secret details")
 		app.SetAnnotations(removeAnnotation(annotations, PauseAnnotation))
 		app.Spec.Config.ConfigMap = configmapReference
 		app.Spec.Config.Secret = secretReference
@@ -82,7 +82,7 @@ func (h *Handler) EnsureCreated(ctx context.Context, obj interface{}) error {
 		if err != nil {
 			return microerror.Mask(err)
 		}
-		h.logger.Debugf(ctx, "updated App CR %#q with configmap and secret details", app.Name)
+		h.logger.Debugf(ctx, "updated App CR with configmap and secret details")
 	}
 
 	return nil
