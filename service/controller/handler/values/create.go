@@ -32,6 +32,7 @@ func (h *Handler) EnsureCreated(ctx context.Context, obj interface{}) error {
 	if configVersion == "0.0.0" {
 		h.logger.Debugf(ctx, "App CR has config version %#q", configVersion)
 		h.logger.Debugf(ctx, "cancelling handler")
+		return nil
 	}
 
 	h.logger.Debugf(ctx, "generating app config version %#q", configVersion)
