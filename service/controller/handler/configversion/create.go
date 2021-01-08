@@ -105,7 +105,7 @@ func (h *Handler) EnsureCreated(ctx context.Context, obj interface{}) error {
 
 func getCatalogIndex(ctx context.Context, catalog string) ([]byte, error) {
 	url := fmt.Sprintf("https://giantswarm.github.io/%s/index.yaml", catalog)
-	response, err := http.Get(url)
+	response, err := http.Get(url) // nolint: gosec
 	if err != nil {
 		return []byte{}, microerror.Mask(err)
 	}
