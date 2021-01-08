@@ -19,10 +19,6 @@ import (
 const (
 	Name       = "values"
 	ConfigRepo = "config"
-	// PauseAnnotation stops app-operator from reconciling App CR too soon.
-	// Once config has been generated, this annotation should be removed by
-	// config-controller.
-	PauseAnnotation = "app-operator.giantswarm.io/paused"
 )
 
 type Config struct {
@@ -150,20 +146,4 @@ func (h *Handler) generateConfig(ctx context.Context, installation, namespace, a
 	}
 
 	return configmap, secret, nil
-}
-
-func removeAnnotation(annotations map[string]string, key string) map[string]string {
-	if annotations == nil {
-		return nil
-	}
-
-	out := map[string]string{}
-	for k, v := range annotations {
-		if k == key {
-			continue
-		}
-		out[k] = v
-	}
-
-	return out
 }

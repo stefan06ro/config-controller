@@ -75,7 +75,7 @@ func (h *Handler) EnsureCreated(ctx context.Context, obj interface{}) error {
 	}
 	if !reflect.DeepEqual(app.Spec.Config.ConfigMap, configmapReference) || !reflect.DeepEqual(app.Spec.Config.Secret, secretReference) {
 		h.logger.Debugf(ctx, "updating App CR with configmap and secret details")
-		app.SetAnnotations(removeAnnotation(annotations, PauseAnnotation))
+		app.SetAnnotations(key.RemoveAnnotation(annotations, key.PauseAnnotation))
 		app.Spec.Config.ConfigMap = configmapReference
 		app.Spec.Config.Secret = secretReference
 		err = h.k8sClient.CtrlClient().Update(ctx, &app)

@@ -23,13 +23,6 @@ func (h *Handler) EnsureCreated(ctx context.Context, obj interface{}) error {
 		annotations = map[string]string{}
 	}
 
-	value, ok := annotations[annotation.ConfigVersion]
-	if ok {
-		h.logger.Debugf(ctx, "App CR is already annotated with %#q: %s", annotation.ConfigVersion, value)
-		h.logger.Debugf(ctx, "cancelling handler")
-		return nil
-	}
-
 	if app.Spec.Catalog == "" {
 		h.logger.Debugf(ctx, "App CR has no .Spec.Catalog set")
 		h.logger.Debugf(ctx, "cancelling handler")
@@ -38,6 +31,13 @@ func (h *Handler) EnsureCreated(ctx context.Context, obj interface{}) error {
 
 	if app.Spec.Catalog == "releases" {
 		h.logger.Debugf(ctx, "App CR has a \"releases\" catalog set")
+		h.logger.Debugf(ctx, "removing %#q annotation", key.PauseAnnotation)
+		app.SetAnnotations(key.RemoveAnnotation(annotations, key.PauseAnnotation))
+		err = h.k8sClient.CtrlClient().Update(ctx, &app)
+		if err != nil {
+			return microerror.Mask(err)
+		}
+		h.logger.Debugf(ctx, "removed %#q annotation", key.PauseAnnotation)
 		h.logger.Debugf(ctx, "cancelling handler")
 		return nil
 	}
