@@ -11,11 +11,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/giantswarm/config-controller/pkg/generator"
-	controllerkey "github.com/giantswarm/config-controller/service/controller/key"
+	"github.com/giantswarm/config-controller/service/controller/key"
 )
 
 func (h *Handler) EnsureDeleted(ctx context.Context, obj interface{}) error {
-	app, err := controllerkey.ToAppCR(obj)
+	app, err := key.ToAppCR(obj)
 	if err != nil {
 		return microerror.Mask(err)
 	}
@@ -50,7 +50,7 @@ func (h *Handler) EnsureDeleted(ctx context.Context, obj interface{}) error {
 	}
 	if cm.Name == "" || secret.Name == "" {
 		ref := configVersion
-		if tagRef := controllerkey.TryVersionToTag(configVersion); tagRef != "" {
+		if tagRef := key.TryVersionToTag(configVersion); tagRef != "" {
 			ref = tagRef
 		}
 		name := generator.GenerateResourceName(app.Spec.Name, ref)
@@ -87,10 +87,14 @@ func (h *Handler) EnsureDeleted(ctx context.Context, obj interface{}) error {
 	}
 	h.logger.Debugf(ctx, "deleted secret for App %#q, config version %#q", app.Spec.Name, configVersion)
 
-	err = h.removeAnnotation(ctx, &app, PauseAnnotation)
+	h.logger.Debugf(ctx, "clearing %q annotation from App CR", PauseAnnotation)
+	app.SetAnnotations(removeAnnotation(app.GetAnnotations(), PauseAnnotation))
+	err = h.k8sClient.CtrlClient().Update(ctx, &app)
 	if err != nil {
-		return err
+		return microerror.Mask(err)
 	}
+	h.logger.Debugf(ctx, "cleared %q annotation from App CR", PauseAnnotation)
+
 	h.logger.Debugf(ctx, "deleted App %#q, config version %#q", app.Spec.Name, configVersion)
 
 	return nil

@@ -9,11 +9,11 @@ import (
 	"github.com/giantswarm/microerror"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
-	controllerkey "github.com/giantswarm/config-controller/service/controller/key"
+	"github.com/giantswarm/config-controller/service/controller/key"
 )
 
 func (h *Handler) EnsureCreated(ctx context.Context, obj interface{}) error {
-	app, err := controllerkey.ToAppCR(obj)
+	app, err := key.ToAppCR(obj)
 	if err != nil {
 		return microerror.Mask(err)
 	}
@@ -31,12 +31,6 @@ func (h *Handler) EnsureCreated(ctx context.Context, obj interface{}) error {
 
 	if configVersion == "0.0.0" {
 		h.logger.Debugf(ctx, "App CR has config version %#q", configVersion)
-		if _, ok := annotations[PauseAnnotation]; ok {
-			err = h.removeAnnotation(ctx, &app, PauseAnnotation)
-			if err != nil {
-				return err
-			}
-		}
 		h.logger.Debugf(ctx, "cancelling handler")
 	}
 
@@ -92,20 +86,4 @@ func (h *Handler) EnsureCreated(ctx context.Context, obj interface{}) error {
 	}
 
 	return nil
-}
-
-func removeAnnotation(annotations map[string]string, key string) map[string]string {
-	if annotations == nil {
-		return nil
-	}
-
-	out := map[string]string{}
-	for k, v := range annotations {
-		if k == key {
-			continue
-		}
-		out[k] = v
-	}
-
-	return out
 }

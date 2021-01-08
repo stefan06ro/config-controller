@@ -2,6 +2,7 @@ package configversion
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 
@@ -102,7 +103,7 @@ func (h *Handler) EnsureCreated(ctx context.Context, obj interface{}) error {
 	return nil
 }
 
-func getCatalogIndex(ctx, catalog string) ([]byte, error) {
+func getCatalogIndex(ctx context.Context, catalog string) ([]byte, error) {
 	url := fmt.Sprintf("https://giantswarm.github.io/%s/index.yaml", catalog)
 	response, err := http.Get(url)
 	if err != nil {
