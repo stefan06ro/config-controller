@@ -2,10 +2,14 @@ package lint
 
 import (
 	"html/template"
+	"regexp"
+	"strings"
 	"text/template/parse"
 
 	"github.com/Masterminds/sprig"
+
 	"github.com/giantswarm/microerror"
+	pathmodifier "github.com/giantswarm/valuemodifier/path"
 )
 
 var (
@@ -41,7 +45,7 @@ type TemplateFile struct {
 	values       map[string]*TemplateValue
 
 	sourceBytes    []byte
-	sourceTemplate *html.Template
+	sourceTemplate *template.Template
 }
 
 type TemplateValue struct {
@@ -57,10 +61,17 @@ func NewValueFile(filepath string, body []byte) (*ValueFile, error) {
 	// extract paths with valuemodifier path service
 	allPaths := map[string]*ValuePath{}
 	{
-		svc := pathService(body)
+		c := pathmodifier.Config{
+			InputBytes: body,
+			Separator:  ".",
+		}
+		svc, err := pathmodifier.New(c)
+		if err != nil {
+			return nil, microerror.Mask(err)
+		}
 		paths, err := svc.All()
 		if err != nil {
-			log.Fatalf("error getting all paths for %q: %s", filepath, err)
+			return nil, microerror.Maskf(executionFailedError, "error getting all paths for %q", filepath)
 		}
 
 		for _, path := range paths {
@@ -74,7 +85,7 @@ func NewValueFile(filepath string, body []byte) (*ValueFile, error) {
 				UsedBy:        []*TemplateFile{},
 				Overshadowing: []*ValueFile{},
 			}
-			allPaths[NormalPath(path)] = v
+			allPaths[NormalPath(path)] = &v
 		}
 	}
 
@@ -116,7 +127,7 @@ func NewTemplateFile(filepath string, body []byte) (*TemplateFile, error) {
 			if node.Type() != parse.NodeText {
 				nodePaths := templatePathPattern.FindAllString(node.String(), -1)
 				for _, np := range nodePaths {
-					normalPath = NormalPath(np)
+					normalPath := NormalPath(np)
 					if _, ok := allValues[normalPath]; !ok {
 						allValues[normalPath] = &TemplateValue{
 							Path:            normalPath,
