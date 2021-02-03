@@ -57,7 +57,7 @@ func (d Discovery) GetAppConfig(installation, app string) (configmap, secret str
 	return
 }
 
-func (d *Discovery) PopulateValuePaths() error {
+func (d *Discovery) populateValuePaths() error {
 	// 1. Mark all overshadowed valuePaths in config.yaml
 	for _, configPatch := range d.ConfigPatches {
 		for path, _ := range configPatch.paths {
@@ -211,6 +211,10 @@ func NewDiscovery(fs generator.Filesystem, gen *generator.Generator) (*Discovery
 	}
 	sort.Strings(d.Installations)
 	sort.Strings(d.Apps)
+
+	if err := d.populateValuePaths(); err != nil {
+		return nil, microerror.Mask(err)
+	}
 
 	return d, nil
 }
