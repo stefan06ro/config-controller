@@ -70,43 +70,45 @@ func (d *Discovery) populateValuePaths() error {
 	// in config or config patches.
 	for _, installation := range d.Installations {
 		for _, app := range d.Apps {
-			configPatch, configPatchOk := d.GetConfigPatch(installation)
+			configPatch, ok := d.GetConfigPatch(installation)
+			if !ok {
+				configPatch = nil
+			}
 
 			// mark all fields used by the templatePatch
-			templatePatch, ok := d.GetAppTemplatePatch(installation, app)
-			if ok {
-				for path, _ := range templatePatch.values {
-					valuePath, valuePathOk := configPatch.paths[path]
-					if configPatchOk && valuePathOk {
-						// config patch exists and contains the path
-						valuePath.UsedBy = appendUniqueUsedBy(valuePath.UsedBy, templatePatch)
-					} else {
-						// the value comes from default config
-						valuePath, _ := d.Config.paths[path]
-						valuePath.UsedBy = appendUniqueUsedBy(valuePath.UsedBy, templatePatch)
-					}
-				}
+			if templatePatch, ok := d.GetAppTemplatePatch(installation, app); ok {
+				populatePathsWithSource(templatePatch, d.Config, configPatch)
 			}
 
 			// mark all fields used by the defaultTemplate
-			defaultTemplate, ok := d.GetAppTemplate(app)
-			if ok {
-				for path, _ := range defaultTemplate.values {
-					valuePath, valuePathOk := configPatch.paths[path]
-					if configPatchOk && valuePathOk {
-						// config patch exists and contains the path
-						valuePath.UsedBy = appendUniqueUsedBy(valuePath.UsedBy, templatePatch)
-					} else {
-						// the value comes from default config
-						valuePath, _ := d.Config.paths[path]
-						valuePath.UsedBy = appendUniqueUsedBy(valuePath.UsedBy, templatePatch)
-					}
-				}
+			if defaultTemplate, ok := d.GetAppTemplate(app); ok {
+				populatePathsWithSource(defaultTemplate, d.Config, configPatch)
 			}
 		}
 	}
 
 	return nil
+}
+
+func populatePathsWithSource(source *TemplateFile, config, configPatch *ValueFile) {
+	for path, templatePath := range source.values {
+		valuePath, valuePathOk := configPatch.paths[path]
+		if configPatch != nil && valuePathOk {
+			// config patch exists and contains the path
+			valuePath.UsedBy = appendUniqueUsedBy(valuePath.UsedBy, source)
+			continue
+		}
+
+		valuePath, valuePathOk = config.paths[path]
+		if valuePathOk {
+			// the value comes from default config
+			valuePath.UsedBy = appendUniqueUsedBy(valuePath.UsedBy, source)
+			continue
+		}
+
+		// the value is "static" (int, str, bool, float etc.)
+		templatePath.IsStatic = true
+	}
 }
 
 func NewDiscovery(fs generator.Filesystem, gen *generator.Generator) (*Discovery, error) {

@@ -51,6 +51,7 @@ type TemplateFile struct {
 type TemplateValue struct {
 	Path            string
 	OccurrenceCount int
+	IsStatic        bool
 }
 
 func NewValueFile(filepath string, body []byte) (*ValueFile, error) {
