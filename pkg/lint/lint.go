@@ -160,3 +160,21 @@ func UnusedPatchableAppValues(d *Discovery) (errors []string) {
 	}
 	return errors
 }
+
+func UnconfiguredAppValues(d *Discovery) (errors []string) {
+	for _, templatePatch := range d.TemplatePatches {
+		for path, value := range templatePatch.values {
+			if !value.IsPatchable {
+				continue
+			}
+			errors = append(
+				errors,
+				fmt.Sprintf(
+					"path %q in %q is never configured; consider removing it",
+					path, templatePatch.filepath,
+				),
+			)
+		}
+	}
+	return errors
+}

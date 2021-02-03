@@ -86,6 +86,7 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 		lint.PatchUnusedValues,
 		lint.GlobalConfigUnusedValues,
 		lint.UnusedPatchableAppValues,
+		lint.UnconfiguredAppValues,
 	}
 
 	errorsFound := 0
