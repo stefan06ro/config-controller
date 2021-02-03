@@ -1,7 +1,7 @@
 package lint
 
 import (
-	"log"
+	"fmt"
 	"reflect"
 )
 
@@ -12,12 +12,15 @@ func GlobalDuplicateConfigValues(d *Discovery) (errors []string) {
 		for _, overshadowingPatch := range valuePath.OvershadowedBy {
 			patchedPath, _ := overshadowingPatch.paths[path]
 			if reflect.DeepEqual(valuePath.Value, patchedPath.Value) {
-				log.Printf(
-					"path %q in %q is a duplicate of the same path in config.yaml",
-					path, overshadowingPatch.filepath,
+				errors = append(
+					errors,
+					fmt.Sprintf(
+						"path %q in %q is a duplicate of the same path in config.yaml",
+						path, overshadowingPatch.filepath,
+					),
 				)
 			}
 		}
 	}
-	return []string{}
+	return errors
 }

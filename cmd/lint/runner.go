@@ -17,8 +17,9 @@ import (
 )
 
 const (
-	owner = "giantswarm"
-	repo  = "config"
+	owner     = "giantswarm"
+	repo      = "config"
+	maxErrors = 50
 )
 
 type runner struct {
@@ -123,10 +124,16 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 	linterFuncs := []lint.LinterFunc{
 		lint.GlobalDuplicateConfigValues,
 	}
+
+	errorsFound := 0
 	for _, f := range linterFuncs {
-		errors := f(discovery)
-		if len(errors) > 0 {
-			fmt.Printf("ERRORS: %s", errors)
+		for _, e := range f(discovery) {
+			fmt.Println("LINT!: " + e)
+			errorsFound += 1
+			if errorsFound >= maxErrors {
+				fmt.Println("LINT!: too many errors, skipping the rest of checks")
+				return nil
+			}
 		}
 	}
 	return nil
