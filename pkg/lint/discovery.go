@@ -19,6 +19,33 @@ type Discovery struct {
 	Apps          []string
 }
 
+func (d Discovery) GetConfigPatch(installation string) (*ValueFile, bool) {
+	for _, patch := range d.ConfigPatches {
+		if patch.installation == installation {
+			return patch, true
+		}
+	}
+	return nil, false
+}
+
+func (d Discovery) GetAppTemplate(app string) (*TemplateFile, bool) {
+	for _, template := range d.Templates {
+		if template.app == app {
+			return template, true
+		}
+	}
+	return nil, false
+}
+
+func (d Discovery) GetAppTemplatePatch(installation, app string) (*TemplateFile, bool) {
+	for _, template := range d.TemplatePatches {
+		if template.installation == installation && template.app == app {
+			return template, true
+		}
+	}
+	return nil, false
+}
+
 func NewDiscovery(fs generator.Filesystem) (*Discovery, error) {
 	d := &Discovery{
 		ConfigPatches:   []*ValueFile{},
