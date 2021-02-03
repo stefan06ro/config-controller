@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/giantswarm/config-controller/pkg/generator"
 	"github.com/giantswarm/microerror"
+
+	"github.com/giantswarm/config-controller/pkg/generator"
 )
 
 type Discovery struct {
