@@ -6,7 +6,8 @@ import (
 )
 
 const (
-	overshadowErrorThreshold float64 = 0.75
+	overshadowErrorThreshold  float64 = 0.75
+	patchUsedByErrorThreshold float64 = 0.25
 )
 
 type LinterFunc func(*Discovery) (errors []string)
@@ -39,6 +40,23 @@ func GlobalOvershadowedValues(d *Discovery) (errors []string) {
 					path, len(valuePath.OvershadowedBy), len(d.Installations),
 				),
 			)
+		}
+	}
+	return errors
+}
+
+func PatchUnusedValues(d *Discovery) (errors []string) {
+	for _, configPatch := range d.ConfigPatches {
+		for path, valuePath := range configPatch.paths {
+			if float64(len(valuePath.UsedBy)/len(d.AppsPerInstallation[configPatch.installation])) <= patchUsedByErrorThreshold {
+				errors = append(
+					errors,
+					fmt.Sprintf(
+						"path %q in %q is used by %d/%d apps; consider moving it to app templates",
+						path, configPatch.filepath, len(valuePath.UsedBy), len(d.AppsPerInstallation[configPatch.installation]),
+					),
+				)
+			}
 		}
 	}
 	return errors

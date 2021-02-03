@@ -18,8 +18,9 @@ type Discovery struct {
 	Templates       []*TemplateFile
 	TemplatePatches []*TemplateFile
 
-	Installations []string
-	Apps          []string
+	Installations       []string
+	Apps                []string
+	AppsPerInstallation map[string][]string
 }
 
 func (d Discovery) GetConfigPatch(installation string) (*ValueFile, bool) {
@@ -117,8 +118,9 @@ func NewDiscovery(fs generator.Filesystem, gen *generator.Generator) (*Discovery
 		Templates:       []*TemplateFile{},
 		TemplatePatches: []*TemplateFile{},
 
-		Installations: []string{},
-		Apps:          []string{},
+		Installations:       []string{},
+		Apps:                []string{},
+		AppsPerInstallation: map[string][]string{},
 	}
 
 	{
@@ -183,6 +185,7 @@ func NewDiscovery(fs generator.Filesystem, gen *generator.Generator) (*Discovery
 		if !inst.IsDir() {
 			continue
 		}
+		d.AppsPerInstallation[inst.Name()] = []string{}
 		appDirs, err := fs.ReadDir("default/apps/")
 		if err != nil {
 			return nil, microerror.Mask(err)
@@ -192,6 +195,7 @@ func NewDiscovery(fs generator.Filesystem, gen *generator.Generator) (*Discovery
 				continue
 			}
 			uniqueApps[app.Name()] = true
+			d.AppsPerInstallation[inst.Name()] = append(d.AppsPerInstallation[inst.Name()], app.Name())
 			filepath := fmt.Sprintf("installations/%s/apps/%s/configmap-values.yaml.patch", inst.Name(), app.Name())
 			body, err := fs.ReadFile(filepath)
 			if err != nil {
