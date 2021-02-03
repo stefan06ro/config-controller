@@ -51,7 +51,8 @@ type TemplateFile struct {
 type TemplateValue struct {
 	Path            string
 	OccurrenceCount int
-	IsStatic        bool
+	// optional values are not configured explicitly, but can be patched
+	IsPatchable bool
 }
 
 func NewValueFile(filepath string, body []byte) (*ValueFile, error) {
@@ -159,6 +160,16 @@ func NewTemplateFile(filepath string, body []byte) (*TemplateFile, error) {
 	}
 
 	return tf, nil
+}
+
+func (t TemplateFile) CopyTemplate() *template.Template {
+	return template.Must(
+		template.
+			New(t.filepath).
+			Funcs(fMap).
+			Parse(string(t.sourceBytes)),
+	)
+
 }
 
 func NormalPath(path string) string {

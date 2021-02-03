@@ -1,8 +1,11 @@
 package lint
 
 import (
+	"bytes"
 	"fmt"
 	"reflect"
+
+	pathmodifier "github.com/giantswarm/valuemodifier/path"
 )
 
 const (
@@ -11,7 +14,7 @@ const (
 )
 
 // TODO: kuba - how about having custom error type
-type LinterFunc func(*Discovery) (errors []string)
+type LinterFunc func(d *Discovery) (errors []string)
 
 func GlobalDuplicateConfigValues(d *Discovery) (errors []string) {
 	for path, valuePath := range d.Config.paths {
@@ -96,6 +99,61 @@ func GlobalConfigUnusedValues(d *Discovery) (errors []string) {
 				fmt.Sprintf(
 					"path %q in %q is used by just one app in %q; consider moving it",
 					path, d.Config.filepath, valuePath.UsedBy[0].filepath,
+				),
+			)
+		}
+	}
+	return errors
+}
+
+// TODO: linter func might need to return internal errors instead of panicking!
+func UnusedPatchableAppValues(d *Discovery) (errors []string) {
+	for _, template := range d.Templates {
+		for path, value := range template.values {
+			if !value.IsPatchable {
+				continue
+			}
+
+			used := false
+			for _, templatePatch := range d.TemplatePatches {
+				// render template with zero data
+				t := templatePatch.CopyTemplate().Option("missingkey=zero")
+				output := bytes.NewBuffer([]byte{})
+				var data interface{}
+				err := t.Execute(output, data)
+				if err != nil {
+					panic(err)
+				}
+
+				c := pathmodifier.Config{
+					InputBytes: output.Bytes(),
+					Separator:  ".",
+				}
+
+				svc, err := pathmodifier.New(c)
+				if err != nil {
+					panic(err)
+				}
+
+				_, err = svc.Get(path)
+				if err != nil && pathmodifier.IsNotFound(err) {
+					continue
+				} else if err != nil {
+					panic(err)
+				}
+
+				used = true
+				break
+			}
+
+			if used {
+				continue
+			}
+			errors = append(
+				errors,
+				fmt.Sprintf(
+					"path %q in %q is never configured; consider removing it",
+					path, template.filepath,
 				),
 			)
 		}

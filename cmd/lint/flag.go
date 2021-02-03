@@ -39,11 +39,6 @@ func (f *flag) Init(cmd *cobra.Command) {
 }
 
 func (f *flag) Validate() error {
-	if f.Installation == "" {
-		// generator needs installation flag
-		// TODO: kuba is this still necessary
-		f.Installation = "gauss"
-	}
 	if f.ConfigVersion == "" && f.Branch == "" {
 		f.Branch = "main"
 	}

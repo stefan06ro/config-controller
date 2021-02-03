@@ -95,8 +95,7 @@ func populatePathsWithSource(source *TemplateFile, config, configPatch *ValueFil
 			continue
 		}
 
-		// the value is "static" (int, str, bool, float etc.)
-		templatePath.IsStatic = true
+		templatePath.IsPatchable = true
 	}
 }
 

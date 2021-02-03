@@ -85,6 +85,7 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 		lint.GlobalOvershadowedValues,
 		lint.PatchUnusedValues,
 		lint.GlobalConfigUnusedValues,
+		lint.UnusedPatchableAppValues,
 	}
 
 	errorsFound := 0
