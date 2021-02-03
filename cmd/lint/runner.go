@@ -119,5 +119,15 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 	}
 
 	fmt.Printf("KUBA %s Discovery: %+v", ref, discovery)
+	fmt.Println("---")
+	linterFuncs := []lint.LinterFunc{
+		lint.GlobalDuplicateConfigValues,
+	}
+	for _, f := range linterFuncs {
+		errors := f(discovery)
+		if len(errors) > 0 {
+			fmt.Printf("ERRORS: %s", errors)
+		}
+	}
 	return nil
 }
