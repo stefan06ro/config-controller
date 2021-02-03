@@ -43,6 +43,7 @@ type TemplateFile struct {
 	installation string // optional for defaults
 	app          string
 	values       map[string]*TemplateValue
+	staticValues map[string]interface{}
 
 	sourceBytes    []byte
 	sourceTemplate *template.Template
@@ -123,22 +124,29 @@ func NewTemplateFile(filepath string, body []byte) (*TemplateFile, error) {
 		}
 		tf.sourceTemplate = t
 
+		// todo: actually use plain yaml!
+		plainYaml := ""
 		for _, node := range t.Tree.Root.Nodes {
-			if node.Type() != parse.NodeText {
-				nodePaths := templatePathPattern.FindAllString(node.String(), -1)
-				for _, np := range nodePaths {
-					normalPath := NormalPath(np)
-					if _, ok := allValues[normalPath]; !ok {
-						allValues[normalPath] = &TemplateValue{
-							Path:            normalPath,
-							OccurrenceCount: 1,
-						}
-					} else {
-						allValues[normalPath].OccurrenceCount += 1
+			if node.Type() == parse.NodeText {
+				plainYaml += node.String()
+				continue
+			}
+
+			nodePaths := templatePathPattern.FindAllString(node.String(), -1)
+			for _, np := range nodePaths {
+				normalPath := NormalPath(np)
+				if _, ok := allValues[normalPath]; !ok {
+					allValues[normalPath] = &TemplateValue{
+						Path:            normalPath,
+						OccurrenceCount: 1,
 					}
+				} else {
+					allValues[normalPath].OccurrenceCount += 1
 				}
 			}
 		}
+		// TODO: KUBA
+		log.Println("KUBA: plainYaml: %q", plainYaml)
 	}
 	tf.values = allValues
 
