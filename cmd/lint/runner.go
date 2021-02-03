@@ -132,11 +132,13 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 		for _, e := range f(discovery) {
 			fmt.Println("LINT!: " + e)
 			errorsFound += 1
-			if errorsFound >= maxErrors {
-				fmt.Println("LINT!: too many errors, skipping the rest of checks")
-				return nil
-			}
+			// KUBA: TODO - uncomment this
+			// if errorsFound >= maxErrors {
+			// 	fmt.Println("LINT!: too many errors, skipping the rest of checks")
+			// 	return nil
+			// }
 		}
 	}
+	fmt.Printf("------------------\nFound %d errors", errorsFound)
 	return nil
 }
