@@ -110,7 +110,7 @@ func GlobalConfigUnusedValues(d *Discovery) (errors []string) {
 func UnusedPatchableAppValues(d *Discovery) (errors []string) {
 	for _, template := range d.Templates {
 		for path, value := range template.values {
-			if !value.IsPatchable {
+			if !value.MayBeMissing {
 				continue
 			}
 
@@ -164,7 +164,7 @@ func UnusedPatchableAppValues(d *Discovery) (errors []string) {
 func UnconfiguredAppValues(d *Discovery) (errors []string) {
 	for _, templatePatch := range d.TemplatePatches {
 		for path, value := range templatePatch.values {
-			if !value.IsPatchable {
+			if !value.MayBeMissing {
 				continue
 			}
 			errors = append(

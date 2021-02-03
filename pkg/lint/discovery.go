@@ -95,7 +95,8 @@ func populatePathsWithSource(source *TemplateFile, config, configPatch *ValueFil
 			continue
 		}
 
-		templatePath.IsPatchable = true
+		// value is missing from config; linter will check if it's patched
+		templatePath.MayBeMissing = true
 	}
 }
 

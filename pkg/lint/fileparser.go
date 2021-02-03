@@ -51,8 +51,10 @@ type TemplateFile struct {
 type TemplateValue struct {
 	Path            string
 	OccurrenceCount int
-	// optional values are not configured explicitly, but can be patched
-	IsPatchable bool
+	// MayBeMissing is set when value is not found in config.
+	// Linter will check if it's patched in by any of the template patches. If
+	// yes, fine. If not, that's an error and linter will let you know.
+	MayBeMissing bool
 }
 
 func NewValueFile(filepath string, body []byte) (*ValueFile, error) {
