@@ -2,7 +2,6 @@ package lint
 
 import (
 	"html/template"
-	"log"
 	"regexp"
 	"strings"
 	"text/template/parse"
@@ -44,7 +43,6 @@ type TemplateFile struct {
 	installation string // optional for defaults
 	app          string
 	values       map[string]*TemplateValue
-	staticValues map[string]interface{}
 
 	sourceBytes    []byte
 	sourceTemplate *template.Template
@@ -116,7 +114,7 @@ func NewTemplateFile(filepath string, body []byte) (*TemplateFile, error) {
 		sourceBytes: body,
 	}
 
-	// extract values from template
+	// extract templated values from template
 	allValues := map[string]*TemplateValue{}
 	{
 		t, err := template.New(filepath).Funcs(fMap).Parse(string(body))
@@ -125,11 +123,8 @@ func NewTemplateFile(filepath string, body []byte) (*TemplateFile, error) {
 		}
 		tf.sourceTemplate = t
 
-		// todo: actually use plain yaml!
-		plainYaml := ""
 		for _, node := range t.Tree.Root.Nodes {
 			if node.Type() == parse.NodeText {
-				plainYaml += node.String()
 				continue
 			}
 
@@ -146,8 +141,6 @@ func NewTemplateFile(filepath string, body []byte) (*TemplateFile, error) {
 				}
 			}
 		}
-		// TODO: KUBA
-		log.Printf("KUBA: plainYaml: %q", plainYaml)
 	}
 	tf.values = allValues
 
