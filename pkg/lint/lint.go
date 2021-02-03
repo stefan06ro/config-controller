@@ -90,12 +90,12 @@ func GlobalConfigUnusedValues(d *Discovery) (errors []string) {
 					path, d.Config.filepath,
 				),
 			)
-		} else if float64(len(valuePath.UsedBy)/len(d.Apps)) <= patchUsedByErrorThreshold {
+		} else if len(valuePath.UsedBy) == 1 {
 			errors = append(
 				errors,
 				fmt.Sprintf(
-					"path %q in %q is used by %d/%d apps; consider moving it to app templates",
-					path, d.Config.filepath, len(valuePath.UsedBy), len(d.Apps),
+					"path %q in %q is used by just one app in %q; consider moving it",
+					path, d.Config.filepath, valuePath.UsedBy[0].filepath,
 				),
 			)
 		}
