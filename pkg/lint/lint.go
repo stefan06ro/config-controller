@@ -13,7 +13,7 @@ func GlobalDuplicateConfigValues(d *Discovery) (errors []string) {
 			patchedPath, _ := overshadowingPatch.paths[path]
 			if reflect.DeepEqual(valuePath.Value, patchedPath.Value) {
 				log.Printf(
-					"path %q in %q is duplicates same path in config.yaml",
+					"path %q in %q is a duplicate of the same path in config.yaml",
 					path, overshadowingPatch.filepath,
 				)
 			}
