@@ -1,6 +1,7 @@
 package lint
 
 import (
+	"context"
 	"fmt"
 	"sort"
 
@@ -10,6 +11,8 @@ import (
 )
 
 type Discovery struct {
+	generator *generator.Generator
+
 	Config          *ValueFile
 	ConfigPatches   []*ValueFile
 	Templates       []*TemplateFile
@@ -46,7 +49,67 @@ func (d Discovery) GetAppTemplatePatch(installation, app string) (*TemplateFile,
 	return nil, false
 }
 
-func NewDiscovery(fs generator.Filesystem) (*Discovery, error) {
+func (d Discovery) GetAppConfig(installation, app string) (configmap, secret string, err error) {
+	configmap, secret, err = d.generator.GenerateRawConfig(context.Background(), installation, app)
+	if err != nil {
+		return "", "", microerror.Mask(err)
+	}
+	return
+}
+
+func (d *Discovery) PopulateValuePaths() error {
+	// 1. Mark all overshadowed valuePaths in config.yaml
+	for _, configPatch := range d.ConfigPatches {
+		for path, _ := range configPatch.paths {
+			if original, ok := d.Config.paths[path]; ok {
+				original.OvershadowedBy = append(original.OvershadowedBy, configPatch)
+			}
+		}
+	}
+	// 2. Render templates for all apps x installations, then set UsedBy fields
+	// in config or config patches.
+	for _, installation := range d.Installations {
+		for _, app := range d.Apps {
+			configPatch, configPatchOk := d.GetConfigPatch(installation)
+
+			// mark all fields used by the templatePatch
+			templatePatch, ok := d.GetAppTemplatePatch(installation, app)
+			if ok {
+				for path, _ := range templatePatch.values {
+					valuePath, valuePathOk := configPatch.paths[path]
+					if configPatchOk && valuePathOk {
+						// config patch exists and contains the path
+						valuePath.UsedBy = appendUniqueUsedBy(valuePath.UsedBy, templatePatch)
+					} else {
+						// the value comes from default config
+						valuePath, _ := d.Config.paths[path]
+						valuePath.UsedBy = appendUniqueUsedBy(valuePath.UsedBy, templatePatch)
+					}
+				}
+			}
+
+			// mark all fields used by the defaultTemplate
+			defaultTemplate, ok := d.GetAppTemplate(app)
+			if ok {
+				for path, _ := range defaultTemplate.values {
+					valuePath, valuePathOk := configPatch.paths[path]
+					if configPatchOk && valuePathOk {
+						// config patch exists and contains the path
+						valuePath.UsedBy = appendUniqueUsedBy(valuePath.UsedBy, templatePatch)
+					} else {
+						// the value comes from default config
+						valuePath, _ := d.Config.paths[path]
+						valuePath.UsedBy = appendUniqueUsedBy(valuePath.UsedBy, templatePatch)
+					}
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+func NewDiscovery(fs generator.Filesystem, gen *generator.Generator) (*Discovery, error) {
 	d := &Discovery{
 		ConfigPatches:   []*ValueFile{},
 		Templates:       []*TemplateFile{},
@@ -150,4 +213,22 @@ func NewDiscovery(fs generator.Filesystem) (*Discovery, error) {
 	sort.Strings(d.Apps)
 
 	return d, nil
+}
+
+func appendUniqueString(list []string, s string) []string {
+	for _, v := range list {
+		if v == s {
+			return list
+		}
+	}
+	return append(list, s)
+}
+
+func appendUniqueUsedBy(list []*TemplateFile, t *TemplateFile) []*TemplateFile {
+	for _, v := range list {
+		if v == t {
+			return list
+		}
+	}
+	return append(list, t)
 }

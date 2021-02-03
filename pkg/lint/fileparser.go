@@ -34,8 +34,8 @@ type ValuePath struct {
 	Value interface{}
 	// files using this value
 	UsedBy []*TemplateFile
-	// overshadowing exactly the same path in other value files
-	Overshadowing []*ValueFile
+	// value is overshadowed by some files
+	OvershadowedBy []*ValueFile
 }
 
 type TemplateFile struct {
@@ -81,9 +81,9 @@ func NewValueFile(filepath string, body []byte) (*ValueFile, error) {
 			}
 
 			v := ValuePath{
-				Value:         value,
-				UsedBy:        []*TemplateFile{},
-				Overshadowing: []*ValueFile{},
+				Value:          value,
+				UsedBy:         []*TemplateFile{},
+				OvershadowedBy: []*ValueFile{},
 			}
 			allPaths[NormalPath(path)] = &v
 		}
