@@ -124,6 +124,7 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 	linterFuncs := []lint.LinterFunc{
 		lint.GlobalDuplicateConfigValues,
 		lint.GlobalOvershadowedValues,
+		lint.PatchUnusedValues,
 	}
 
 	errorsFound := 0
