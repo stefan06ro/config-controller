@@ -1,36 +1,47 @@
 package lint
 
 import (
+	"fmt"
+
 	"github.com/giantswarm/microerror"
 
 	"github.com/giantswarm/config-controller/pkg/generator"
 )
 
 type Discovery struct {
-	config          *ValueFile
-	configPatches   []*ValueFile
-	templates       []*TemplateFile
-	templatePatches []*TemplateFile
+	Config          *ValueFile
+	ConfigPatches   []*ValueFile
+	Templates       []*TemplateFile
+	TemplatePatches []*TemplateFile
+
+	Installations []string
+	Apps          []string
 }
 
 func NewDiscovery(fs generator.Filesystem) (*Discovery, error) {
 	d := &Discovery{
-		configPatches:   []*ValueFile{},
-		templates:       []*TemplateFile{},
-		templatePatches: []*TemplateFile{},
+		ConfigPatches:   []*ValueFile{},
+		Templates:       []*TemplateFile{},
+		TemplatePatches: []*TemplateFile{},
+
+		Installations: []string{},
+		Apps:          []string{},
 	}
 
 	{
 		filepath := "default/config.yaml"
 		body, err := fs.ReadFile(filepath)
 		if err != nil {
-			return nil, microerror.Maskf(err, "cannot find %q", filepath)
+			return nil, microerror.Mask(err)
 		}
-		d.config, err = NewValueFile(filepath, body)
+		d.Config, err = NewValueFile(filepath, body)
 		if err != nil {
 			return nil, microerror.Mask(err)
 		}
 	}
+
+	uniqueInstallations := map[string]bool{}
+	uniqueApps := map[string]bool{}
 
 	installationDirs, err := fs.ReadDir("installations/")
 	if err != nil {
@@ -41,16 +52,17 @@ func NewDiscovery(fs generator.Filesystem) (*Discovery, error) {
 		if !inst.IsDir() {
 			continue
 		}
+		uniqueInstallations[inst.Name()] = true
 		filepath := fmt.Sprintf("installation/%s/config.yaml.patch", inst.Name())
 		body, err := fs.ReadFile(filepath)
 		if err != nil {
-			return nil, microerror.Maskf(err, "cannot find %q", filepath)
+			return nil, microerror.Mask(err)
 		}
 		patch, err := NewValueFile(filepath, body)
 		if err != nil {
 			return nil, microerror.Mask(err)
 		}
-		d.configPatches = append(d.configPatches, patch)
+		d.ConfigPatches = append(d.ConfigPatches, patch)
 	}
 
 	defaultAppDirs, err := fs.ReadDir("default/apps/")
@@ -61,16 +73,17 @@ func NewDiscovery(fs generator.Filesystem) (*Discovery, error) {
 		if !app.IsDir() {
 			continue
 		}
+		uniqueApps[app.Name()] = true
 		filepath := fmt.Sprintf("default/apps/%s/configmap-values.yaml.template", app.Name())
 		body, err := fs.ReadFile(filepath)
 		if err != nil {
-			return nil, microerror.Maskf(err, "cannot find %q", filepath)
+			return nil, microerror.Mask(err)
 		}
 		template, err := NewTemplateFile(filepath, body)
 		if err != nil {
 			return nil, microerror.Mask(err)
 		}
-		d.templates = append(d.templates, template)
+		d.Templates = append(d.Templates, template)
 	}
 
 	for _, inst := range installationDirs {
@@ -85,18 +98,30 @@ func NewDiscovery(fs generator.Filesystem) (*Discovery, error) {
 			if !app.IsDir() {
 				continue
 			}
+			uniqueApps[app.Name()] = true
 			filepath := fmt.Sprintf("installation/%s/apps/%s/configmap-values.yaml.patch", inst.Name(), app.Name())
 			body, err := fs.ReadFile(filepath)
 			if err != nil {
-				return nil, microerror.Maskf(err, "cannot find %q", filepath)
+				return nil, microerror.Mask(err)
 			}
 			templatePatch, err := NewTemplateFile(filepath, body)
 			if err != nil {
 				return nil, microerror.Mask(err)
 			}
-			d.templatePatches = append(d.templatePatches, templatePatch)
+			d.TemplatePatches = append(d.TemplatePatches, templatePatch)
 		}
 	}
 
+	for k, _ := range uniqueInstallations {
+		d.Installations = append(d.Installations, k)
+	}
+	for k, _ := range uniqueApps {
+		d.Apps = append(d.Apps, k)
+	}
+
 	return d, nil
+}
+
+func (d Discovery) X() {
+
 }

@@ -2,6 +2,7 @@ package lint
 
 import (
 	"html/template"
+	"log"
 	"regexp"
 	"strings"
 	"text/template/parse"
@@ -146,7 +147,7 @@ func NewTemplateFile(filepath string, body []byte) (*TemplateFile, error) {
 			}
 		}
 		// TODO: KUBA
-		log.Println("KUBA: plainYaml: %q", plainYaml)
+		log.Printf("KUBA: plainYaml: %q", plainYaml)
 	}
 	tf.values = allValues
 
