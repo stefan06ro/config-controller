@@ -123,6 +123,7 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 	fmt.Println("---")
 	linterFuncs := []lint.LinterFunc{
 		lint.GlobalDuplicateConfigValues,
+		lint.GlobalOvershadowedValues,
 	}
 
 	errorsFound := 0
