@@ -2,6 +2,7 @@ package lint
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/giantswarm/microerror"
 
@@ -118,6 +119,8 @@ func NewDiscovery(fs generator.Filesystem) (*Discovery, error) {
 	for k, _ := range uniqueApps {
 		d.Apps = append(d.Apps, k)
 	}
+	sort.Strings(d.Installations)
+	sort.Strings(d.Apps)
 
 	return d, nil
 }

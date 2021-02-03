@@ -107,7 +107,7 @@ func NewValueFile(filepath string, body []byte) (*ValueFile, error) {
 }
 
 func NewTemplateFile(filepath string, body []byte) (*TemplateFile, error) {
-	if !strings.HasSuffix(filepath, ".template") && !strings.HasSuffix(filepath, ".values.yaml.patch") {
+	if !strings.HasSuffix(filepath, ".template") && !strings.HasSuffix(filepath, "values.yaml.patch") {
 		return nil, microerror.Maskf(executionFailedError, "given file is not a template: %q", filepath)
 	}
 
