@@ -141,7 +141,9 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 			fmt.Println("LINT!: " + e)
 			errorsFound += 1
 			if r.flag.MaxErrors > 0 && errorsFound >= r.flag.MaxErrors {
+				fmt.Println(separator)
 				fmt.Println("LINT!: too many errors, skipping the rest of checks")
+				fmt.Printf("LINT!: run with '--%s 0' to see all the errors\n", flagMaxErrors)
 				return nil
 			}
 		}
