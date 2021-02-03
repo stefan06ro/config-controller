@@ -5,15 +5,13 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/ghodss/yaml"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	"github.com/spf13/cobra"
 
-	"github.com/giantswarm/config-controller/pkg/decrypt"
 	"github.com/giantswarm/config-controller/pkg/generator"
 	"github.com/giantswarm/config-controller/pkg/github"
-	"github.com/giantswarm/config-controller/pkg/project"
+	"github.com/giantswarm/config-controller/pkg/lint"
 )
 
 const (
@@ -45,32 +43,6 @@ func (r *runner) Run(cmd *cobra.Command, args []string) error {
 }
 
 func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) error {
-	var decryptTraverser *decrypt.YAMLTraverser
-	{
-		vaultClient, err := createVaultClientUsingOpsctl(ctx, r.flag.GitHubToken, r.flag.Installation)
-		if err != nil {
-			return microerror.Mask(err)
-		}
-
-		c := decrypt.VaultDecrypterConfig{
-			VaultClient: vaultClient,
-		}
-
-		decrypter, err := decrypt.NewVaultDecrypter(c)
-		if err != nil {
-			return microerror.Mask(err)
-		}
-
-		decryptTraverser, err = decrypt.NewYAMLTraverser(
-			decrypt.YAMLTraverserConfig{
-				Decrypter: decrypter,
-			},
-		)
-		if err != nil {
-			return microerror.Mask(err)
-		}
-	}
-
 	var store generator.Filesystem
 	var ref string
 	{
@@ -103,16 +75,12 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 		}
 	}
 
-	gen, err := generator.New(&generator.Config{
-		Fs:               store,
-		DecryptTraverser: decryptTraverser,
-		ProjectVersion:   project.AppControlPlaneVersion(),
-	})
+	// GOTO: KUBA ---
+	discovery, err := lint.NewDiscovery(store)
 	if err != nil {
 		return microerror.Mask(err)
 	}
 
-	// GOTO: KUBA ---
-
+	fmt.Printf("KUBA %s Discovery: %+v", ref, discovery)
 	return nil
 }

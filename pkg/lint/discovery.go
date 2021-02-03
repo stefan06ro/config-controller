@@ -53,7 +53,7 @@ func NewDiscovery(fs generator.Filesystem) (*Discovery, error) {
 			continue
 		}
 		uniqueInstallations[inst.Name()] = true
-		filepath := fmt.Sprintf("installation/%s/config.yaml.patch", inst.Name())
+		filepath := fmt.Sprintf("installations/%s/config.yaml.patch", inst.Name())
 		body, err := fs.ReadFile(filepath)
 		if err != nil {
 			return nil, microerror.Mask(err)
@@ -99,7 +99,7 @@ func NewDiscovery(fs generator.Filesystem) (*Discovery, error) {
 				continue
 			}
 			uniqueApps[app.Name()] = true
-			filepath := fmt.Sprintf("installation/%s/apps/%s/configmap-values.yaml.patch", inst.Name(), app.Name())
+			filepath := fmt.Sprintf("installations/%s/apps/%s/configmap-values.yaml.patch", inst.Name(), app.Name())
 			body, err := fs.ReadFile(filepath)
 			if err != nil {
 				return nil, microerror.Mask(err)
@@ -120,8 +120,4 @@ func NewDiscovery(fs generator.Filesystem) (*Discovery, error) {
 	}
 
 	return d, nil
-}
-
-func (d Discovery) X() {
-
 }
