@@ -11,11 +11,9 @@ import (
 	"github.com/giantswarm/micrologger"
 	"github.com/spf13/cobra"
 
-	"github.com/giantswarm/config-controller/pkg/decrypt"
 	"github.com/giantswarm/config-controller/pkg/generator"
 	"github.com/giantswarm/config-controller/pkg/github"
 	"github.com/giantswarm/config-controller/pkg/lint"
-	"github.com/giantswarm/config-controller/pkg/project"
 )
 
 const (
@@ -50,7 +48,6 @@ func (r *runner) Run(cmd *cobra.Command, args []string) error {
 
 func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) error {
 	var store generator.Filesystem
-	var ref string
 	{
 		gh, err := github.New(github.Config{
 			Token: r.flag.GitHubToken,
@@ -70,60 +67,19 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 				return microerror.Mask(err)
 			}
 
-			ref = tag
 		} else if r.flag.Branch != "" {
 			store, err = gh.GetFilesByBranch(ctx, owner, repo, r.flag.Branch)
 			if err != nil {
 				return microerror.Mask(err)
 			}
-
-			ref = r.flag.Branch
 		}
 	}
 
-	var decryptTraverser *decrypt.YAMLTraverser
-	{
-		vaultClient, err := createVaultClientUsingOpsctl(ctx, r.flag.GitHubToken, r.flag.Installation)
-		if err != nil {
-			return microerror.Mask(err)
-		}
-
-		c := decrypt.VaultDecrypterConfig{
-			VaultClient: vaultClient,
-		}
-
-		decrypter, err := decrypt.NewVaultDecrypter(c)
-		if err != nil {
-			return microerror.Mask(err)
-		}
-
-		decryptTraverser, err = decrypt.NewYAMLTraverser(
-			decrypt.YAMLTraverserConfig{
-				Decrypter: decrypter,
-			},
-		)
-		if err != nil {
-			return microerror.Mask(err)
-		}
-	}
-
-	gen, err := generator.New(&generator.Config{
-		Fs:               store,
-		DecryptTraverser: decryptTraverser,
-		ProjectVersion:   project.AppControlPlaneVersion(),
-	})
+	discovery, err := lint.NewDiscovery(store)
 	if err != nil {
 		return microerror.Mask(err)
 	}
 
-	// GOTO: KUBA ---
-	discovery, err := lint.NewDiscovery(store, gen)
-	if err != nil {
-		return microerror.Mask(err)
-	}
-
-	fmt.Printf("KUBA %s Discovery: %+v", ref, discovery)
-	fmt.Println("---")
 	linterFuncs := []lint.LinterFunc{
 		lint.GlobalDuplicateConfigValues,
 		lint.GlobalOvershadowedValues,
@@ -138,12 +94,12 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 			fmt.Println(separator + " " + runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Name() + " " + separator)
 		}
 		for _, e := range errors {
-			fmt.Println("LINT!: " + e)
+			fmt.Println(e)
 			errorsFound += 1
 			if r.flag.MaxErrors > 0 && errorsFound >= r.flag.MaxErrors {
 				fmt.Println(separator)
-				fmt.Println("LINT!: too many errors, skipping the rest of checks")
-				fmt.Printf("LINT!: run with '--%s 0' to see all the errors\n", flagMaxErrors)
+				fmt.Println("Too many errors, skipping the rest of checks")
+				fmt.Printf("Run linter with '--%s 0' to see all the errors\n", flagMaxErrors)
 				return nil
 			}
 		}

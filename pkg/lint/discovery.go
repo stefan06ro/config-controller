@@ -1,18 +1,14 @@
 package lint
 
 import (
-	"context"
 	"fmt"
 	"sort"
 
-	"github.com/giantswarm/microerror"
-
 	"github.com/giantswarm/config-controller/pkg/generator"
+	"github.com/giantswarm/microerror"
 )
 
 type Discovery struct {
-	generator *generator.Generator
-
 	Config          *ValueFile
 	ConfigPatches   []*ValueFile
 	Templates       []*TemplateFile
@@ -48,14 +44,6 @@ func (d Discovery) GetAppTemplatePatch(installation, app string) (*TemplateFile,
 		}
 	}
 	return nil, false
-}
-
-func (d Discovery) GetAppConfig(installation, app string) (configmap, secret string, err error) {
-	configmap, secret, err = d.generator.GenerateRawConfig(context.Background(), installation, app)
-	if err != nil {
-		return "", "", microerror.Mask(err)
-	}
-	return
 }
 
 func (d *Discovery) populateValuePaths() error {
@@ -112,7 +100,7 @@ func populatePathsWithSource(source *TemplateFile, config, configPatch *ValueFil
 	}
 }
 
-func NewDiscovery(fs generator.Filesystem, gen *generator.Generator) (*Discovery, error) {
+func NewDiscovery(fs generator.Filesystem) (*Discovery, error) {
 	d := &Discovery{
 		ConfigPatches:   []*ValueFile{},
 		Templates:       []*TemplateFile{},
