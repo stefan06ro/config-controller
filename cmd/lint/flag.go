@@ -14,7 +14,7 @@ const (
 	flagConfigVersion = "config-version"
 	flagGithubToken   = "github-token"
 	flagInstallation  = "installation"
-	flagNamespace     = "namespace"
+	flagMaxErrors     = "max-errors"
 
 	envConfigControllerGithubToken = "CONFIG_CONTROLLER_GITHUB_TOKEN" //nolint:gosec
 )
@@ -25,7 +25,7 @@ type flag struct {
 	ConfigVersion string
 	GitHubToken   string
 	Installation  string
-	Namespace     string
+	MaxErrors     int
 }
 
 func (f *flag) Init(cmd *cobra.Command) {
@@ -35,6 +35,7 @@ func (f *flag) Init(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&f.ConfigVersion, flagConfigVersion, "", `Major part of the configuration version to use for generation (e.g. "v2").`)
 	cmd.Flags().StringVar(&f.Installation, flagInstallation, "", `Installation codename (e.g. "gauss").`)
 	cmd.Flags().StringVar(&f.GitHubToken, flagGithubToken, "", fmt.Sprintf(`GitHub token to use for "opsctl create vaultconfig" calls. Defaults to the value of %s env var.`, envConfigControllerGithubToken))
+	cmd.Flags().IntVar(&f.MaxErrors, flagMaxErrors, 50, "Max number of linter errors to display. Unlimited output if set to 0. Defaults to 50.")
 }
 
 func (f *flag) Validate() error {

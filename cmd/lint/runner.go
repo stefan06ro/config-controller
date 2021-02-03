@@ -23,7 +23,6 @@ const (
 	repo  = "config"
 
 	separator = "-------------------------"
-	maxErrors = 50
 )
 
 type runner struct {
@@ -129,6 +128,7 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 		lint.GlobalDuplicateConfigValues,
 		lint.GlobalOvershadowedValues,
 		lint.PatchUnusedValues,
+		lint.GlobalConfigUnusedValues,
 	}
 
 	errorsFound := 0
@@ -140,11 +140,10 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 		for _, e := range errors {
 			fmt.Println("LINT!: " + e)
 			errorsFound += 1
-			// KUBA: TODO - uncomment this
-			// if errorsFound >= maxErrors {
-			// 	fmt.Println("LINT!: too many errors, skipping the rest of checks")
-			// 	return nil
-			// }
+			if r.flag.MaxErrors > 0 && errorsFound >= r.flag.MaxErrors {
+				fmt.Println("LINT!: too many errors, skipping the rest of checks")
+				return nil
+			}
 		}
 	}
 	fmt.Printf("%s\nFound %d errors\n", separator, errorsFound)

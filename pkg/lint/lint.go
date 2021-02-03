@@ -10,6 +10,7 @@ const (
 	patchUsedByErrorThreshold float64 = 0.25
 )
 
+// TODO: kuba - how about having custom error type
 type LinterFunc func(*Discovery) (errors []string)
 
 func GlobalDuplicateConfigValues(d *Discovery) (errors []string) {
@@ -31,6 +32,9 @@ func GlobalDuplicateConfigValues(d *Discovery) (errors []string) {
 }
 
 func GlobalOvershadowedValues(d *Discovery) (errors []string) {
+	if len(d.Installations) == 0 {
+		return // avoid division by 0
+	}
 	for path, valuePath := range d.Config.paths {
 		if float64(len(valuePath.OvershadowedBy)/len(d.Installations)) >= overshadowErrorThreshold {
 			errors = append(
@@ -47,8 +51,19 @@ func GlobalOvershadowedValues(d *Discovery) (errors []string) {
 
 func PatchUnusedValues(d *Discovery) (errors []string) {
 	for _, configPatch := range d.ConfigPatches {
+		if len(d.AppsPerInstallation[configPatch.installation]) == 0 {
+			continue // avoid division by 0
+		}
 		for path, valuePath := range configPatch.paths {
-			if float64(len(valuePath.UsedBy)/len(d.AppsPerInstallation[configPatch.installation])) <= patchUsedByErrorThreshold {
+			if len(valuePath.UsedBy) == 0 {
+				errors = append(
+					errors,
+					fmt.Sprintf(
+						"path %q in %q is *unused*; consider removing it",
+						path, configPatch.filepath,
+					),
+				)
+			} else if float64(len(valuePath.UsedBy)/len(d.AppsPerInstallation[configPatch.installation])) <= patchUsedByErrorThreshold {
 				errors = append(
 					errors,
 					fmt.Sprintf(
@@ -57,6 +72,32 @@ func PatchUnusedValues(d *Discovery) (errors []string) {
 					),
 				)
 			}
+		}
+	}
+	return errors
+}
+
+func GlobalConfigUnusedValues(d *Discovery) (errors []string) {
+	if len(d.Installations) == 0 || len(d.Apps) == 0 {
+		return // what's the point, nothing is defined
+	}
+	for path, valuePath := range d.Config.paths {
+		if len(valuePath.UsedBy) == 0 {
+			errors = append(
+				errors,
+				fmt.Sprintf(
+					"path %q in %q is *unused*; consider removing it",
+					path, d.Config.filepath,
+				),
+			)
+		} else if float64(len(valuePath.UsedBy)/len(d.Apps)) <= patchUsedByErrorThreshold {
+			errors = append(
+				errors,
+				fmt.Sprintf(
+					"path %q in %q is used by %d/%d apps; consider moving it to app templates",
+					path, d.Config.filepath, len(valuePath.UsedBy), len(d.Apps),
+				),
+			)
 		}
 	}
 	return errors
