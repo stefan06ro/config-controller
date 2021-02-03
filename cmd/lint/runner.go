@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"reflect"
+	"runtime"
 
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
@@ -17,8 +19,10 @@ import (
 )
 
 const (
-	owner     = "giantswarm"
-	repo      = "config"
+	owner = "giantswarm"
+	repo  = "config"
+
+	separator = "-------------------------"
 	maxErrors = 50
 )
 
@@ -129,7 +133,11 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 
 	errorsFound := 0
 	for _, f := range linterFuncs {
-		for _, e := range f(discovery) {
+		errors := f(discovery)
+		if len(errors) > 0 {
+			fmt.Println(separator + " " + runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Name() + " " + separator)
+		}
+		for _, e := range errors {
 			fmt.Println("LINT!: " + e)
 			errorsFound += 1
 			// KUBA: TODO - uncomment this
@@ -139,6 +147,6 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 			// }
 		}
 	}
-	fmt.Printf("------------------\nFound %d errors", errorsFound)
+	fmt.Printf("%s\nFound %d errors\n", separator, errorsFound)
 	return nil
 }
