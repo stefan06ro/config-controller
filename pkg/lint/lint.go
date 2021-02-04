@@ -13,11 +13,11 @@ const (
 // TODO: kuba - how about having custom error type
 type LinterFunc func(d *Discovery) (errors []string)
 
-func GlobalDuplicateConfigValues(d *Discovery) (errors []string) {
-	for path, valuePath := range d.Config.paths {
-		for _, overshadowingPatch := range valuePath.OvershadowedBy {
+func LintDuplicateConfigValues(d *Discovery) (errors []string) {
+	for path, defaultPath := range d.Config.paths {
+		for _, overshadowingPatch := range defaultPath.OvershadowedBy {
 			patchedPath := overshadowingPatch.paths[path]
-			if reflect.DeepEqual(valuePath.Value, patchedPath.Value) {
+			if reflect.DeepEqual(defaultPath.Value, patchedPath.Value) {
 				errors = append(
 					errors,
 					fmt.Sprintf(
@@ -31,7 +31,7 @@ func GlobalDuplicateConfigValues(d *Discovery) (errors []string) {
 	return errors
 }
 
-func GlobalOvershadowedValues(d *Discovery) (errors []string) {
+func LintOvershadowedConfigValues(d *Discovery) (errors []string) {
 	if len(d.Installations) == 0 {
 		return // avoid division by 0
 	}
@@ -49,7 +49,7 @@ func GlobalOvershadowedValues(d *Discovery) (errors []string) {
 	return errors
 }
 
-func PatchUnusedValues(d *Discovery) (errors []string) {
+func LintUnusedConfigPatchValues(d *Discovery) (errors []string) {
 	for _, configPatch := range d.ConfigPatches {
 		if len(d.AppsPerInstallation[configPatch.installation]) == 0 {
 			continue // avoid division by 0
@@ -77,7 +77,7 @@ func PatchUnusedValues(d *Discovery) (errors []string) {
 	return errors
 }
 
-func GlobalConfigUnusedValues(d *Discovery) (errors []string) {
+func LintUnusedConfigValues(d *Discovery) (errors []string) {
 	if len(d.Installations) == 0 || len(d.Apps) == 0 {
 		return // what's the point, nothing is defined
 	}
@@ -103,8 +103,7 @@ func GlobalConfigUnusedValues(d *Discovery) (errors []string) {
 	return errors
 }
 
-// TODO: linter func might need to return internal errors instead of panicking!
-func UnusedPatchableAppValues(d *Discovery) (errors []string) {
+func LintUndefinedTemplateValues(d *Discovery) (errors []string) {
 	for _, template := range d.Templates {
 		for path, value := range template.values {
 			if !value.MayBeMissing {
@@ -134,7 +133,7 @@ func UnusedPatchableAppValues(d *Discovery) (errors []string) {
 	return errors
 }
 
-func UnconfiguredAppValues(d *Discovery) (errors []string) {
+func LintUndefinedTemplatePatchValues(d *Discovery) (errors []string) {
 	for _, templatePatch := range d.TemplatePatches {
 		for path, value := range templatePatch.values {
 			if !value.MayBeMissing {

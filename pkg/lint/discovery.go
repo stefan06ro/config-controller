@@ -82,14 +82,16 @@ func (d *Discovery) populateValuePaths() error {
 
 func populatePathsWithSource(source *TemplateFile, config, configPatch *ValueFile) {
 	for path, templatePath := range source.values {
-		valuePath, valuePathOk := configPatch.paths[path]
-		if configPatch != nil && valuePathOk {
-			// config patch exists and contains the path
-			valuePath.UsedBy = appendUniqueUsedBy(valuePath.UsedBy, source)
-			continue
+		if configPatch != nil {
+			valuePath, valuePathOk := configPatch.paths[path]
+			if valuePathOk {
+				// config patch exists and contains the path
+				valuePath.UsedBy = appendUniqueUsedBy(valuePath.UsedBy, source)
+				continue
+			}
 		}
 
-		valuePath, valuePathOk = config.paths[path]
+		valuePath, valuePathOk := config.paths[path]
 		if valuePathOk {
 			// the value comes from default config
 			valuePath.UsedBy = appendUniqueUsedBy(valuePath.UsedBy, source)

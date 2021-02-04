@@ -23,6 +23,17 @@ const (
 	separator = "-------------------------"
 )
 
+var (
+	linterFuncs = []lint.LinterFunc{
+		lint.LintDuplicateConfigValues,
+		lint.LintOvershadowedConfigValues,
+		lint.LintUnusedConfigPatchValues,
+		lint.LintUnusedConfigValues,
+		lint.LintUndefinedTemplateValues,
+		lint.LintUndefinedTemplatePatchValues,
+	}
+)
+
 type runner struct {
 	flag   *flag
 	logger micrologger.Logger
@@ -78,15 +89,6 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 	discovery, err := lint.NewDiscovery(store)
 	if err != nil {
 		return microerror.Mask(err)
-	}
-
-	linterFuncs := []lint.LinterFunc{
-		lint.GlobalDuplicateConfigValues,
-		lint.GlobalOvershadowedValues,
-		lint.PatchUnusedValues,
-		lint.GlobalConfigUnusedValues,
-		lint.UnusedPatchableAppValues,
-		lint.UnconfiguredAppValues,
 	}
 
 	errorsFound := 0
