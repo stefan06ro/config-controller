@@ -7,6 +7,7 @@ import "github.com/giantswarm/microerror"
 //
 //     https://github.com/giantswarm/fmt/blob/master/go/errors.md#matching-errors
 //
+// nolint:unused
 var executionFailedError = &microerror.Error{
 	Kind: "executionFailedError",
 }

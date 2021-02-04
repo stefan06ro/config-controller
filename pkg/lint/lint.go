@@ -19,7 +19,7 @@ type LinterFunc func(d *Discovery) (errors []string)
 func GlobalDuplicateConfigValues(d *Discovery) (errors []string) {
 	for path, valuePath := range d.Config.paths {
 		for _, overshadowingPatch := range valuePath.OvershadowedBy {
-			patchedPath, _ := overshadowingPatch.paths[path]
+			patchedPath := overshadowingPatch.paths[path]
 			if reflect.DeepEqual(valuePath.Value, patchedPath.Value) {
 				errors = append(
 					errors,

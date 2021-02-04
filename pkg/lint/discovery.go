@@ -50,7 +50,7 @@ func (d Discovery) GetAppTemplatePatch(installation, app string) (*TemplateFile,
 func (d *Discovery) populateValuePaths() error {
 	// 1. Mark all overshadowed valuePaths in config.yaml
 	for _, configPatch := range d.ConfigPatches {
-		for path, _ := range configPatch.paths {
+		for path := range configPatch.paths {
 			if original, ok := d.Config.paths[path]; ok {
 				original.OvershadowedBy = append(original.OvershadowedBy, configPatch)
 			}
@@ -198,10 +198,10 @@ func NewDiscovery(fs generator.Filesystem) (*Discovery, error) {
 		}
 	}
 
-	for k, _ := range uniqueInstallations {
+	for k := range uniqueInstallations {
 		d.Installations = append(d.Installations, k)
 	}
-	for k, _ := range uniqueApps {
+	for k := range uniqueApps {
 		d.Apps = append(d.Apps, k)
 	}
 	sort.Strings(d.Installations)
@@ -212,15 +212,6 @@ func NewDiscovery(fs generator.Filesystem) (*Discovery, error) {
 	}
 
 	return d, nil
-}
-
-func appendUniqueString(list []string, s string) []string {
-	for _, v := range list {
-		if v == s {
-			return list
-		}
-	}
-	return append(list, s)
 }
 
 func appendUniqueUsedBy(list []*TemplateFile, t *TemplateFile) []*TemplateFile {
