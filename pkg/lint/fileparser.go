@@ -159,8 +159,8 @@ func NewTemplateFile(filepath string, body []byte) (*TemplateFile, error) {
 			output := bytes.NewBuffer([]byte{})
 			var data interface{}
 			// Render template without values. All templated values will be
-			// replaced by default zero values: "" for string, 0 for int, false for
-			// bool etc.
+			// replaced by default zero values: "" for string, 0 for int, false
+			// for bool etc.
 			err = t.Execute(output, data)
 			if err != nil {
 				return nil, microerror.Mask(err)
