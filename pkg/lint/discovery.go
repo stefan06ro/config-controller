@@ -15,9 +15,13 @@ type Discovery struct {
 	Templates       []*TemplateFile
 	TemplatePatches []*TemplateFile
 
-	Installations       []string
-	Apps                []string
-	AppsPerInstallation map[string][]string
+	Installations []string
+	Apps          []string
+
+	AppsPerInstallation            map[string][]string
+	ConfigPatchesPerInstallation   map[string]*ValueFile
+	TemplatesPerApp                map[string]*TemplateFile
+	TemplatePatchesPerInstallation map[string][]*TemplateFile
 }
 
 func (d Discovery) GetConfigPatch(installation string) (*ValueFile, bool) {
@@ -56,7 +60,7 @@ func (d *Discovery) populateValuePaths() error {
 			}
 		}
 	}
-	// 2. Render templates for all apps x installations, then set UsedBy fields
+	// 2. Check templates for all apps x installations, then set UsedBy fields
 	// in config or config patches.
 	for _, installation := range d.Installations {
 		for _, app := range d.Apps {
@@ -109,11 +113,16 @@ func NewDiscovery(fs generator.Filesystem) (*Discovery, error) {
 		Templates:       []*TemplateFile{},
 		TemplatePatches: []*TemplateFile{},
 
-		Installations:       []string{},
-		Apps:                []string{},
-		AppsPerInstallation: map[string][]string{},
+		Installations: []string{},
+		Apps:          []string{},
+
+		AppsPerInstallation:            map[string][]string{},
+		ConfigPatchesPerInstallation:   map[string]*ValueFile{},
+		TemplatesPerApp:                map[string]*TemplateFile{},
+		TemplatePatchesPerInstallation: map[string][]*TemplateFile{},
 	}
 
+	// collect config.yaml
 	{
 		filepath := "default/config.yaml"
 		body, err := fs.ReadFile(filepath)
@@ -134,6 +143,7 @@ func NewDiscovery(fs generator.Filesystem) (*Discovery, error) {
 		return nil, microerror.Mask(err)
 	}
 
+	// collect installations/*/config.yaml.patch files
 	for _, inst := range installationDirs {
 		if !inst.IsDir() {
 			continue
@@ -149,8 +159,10 @@ func NewDiscovery(fs generator.Filesystem) (*Discovery, error) {
 			return nil, microerror.Mask(err)
 		}
 		d.ConfigPatches = append(d.ConfigPatches, patch)
+		d.ConfigPatchesPerInstallation[inst.Name()] = patch
 	}
 
+	// collect default/apps/*/configmap-values.yaml.template files
 	defaultAppDirs, err := fs.ReadDir("default/apps/")
 	if err != nil {
 		return nil, microerror.Mask(err)
@@ -170,13 +182,16 @@ func NewDiscovery(fs generator.Filesystem) (*Discovery, error) {
 			return nil, microerror.Mask(err)
 		}
 		d.Templates = append(d.Templates, template)
+		d.TemplatesPerApp[app.Name()] = template
 	}
 
+	// collect installations/*/apps/*/configmap-values.yaml.patch files
 	for _, inst := range installationDirs {
 		if !inst.IsDir() {
 			continue
 		}
 		d.AppsPerInstallation[inst.Name()] = []string{}
+		d.TemplatePatchesPerInstallation[inst.Name()] = []*TemplateFile{}
 		appDirs, err := fs.ReadDir("default/apps/")
 		if err != nil {
 			return nil, microerror.Mask(err)
@@ -197,6 +212,10 @@ func NewDiscovery(fs generator.Filesystem) (*Discovery, error) {
 				return nil, microerror.Mask(err)
 			}
 			d.TemplatePatches = append(d.TemplatePatches, templatePatch)
+			d.TemplatePatchesPerInstallation[inst.Name()] = append(
+				d.TemplatePatchesPerInstallation[inst.Name()],
+				templatePatch,
+			)
 		}
 	}
 
