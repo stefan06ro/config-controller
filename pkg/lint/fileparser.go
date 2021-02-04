@@ -43,8 +43,12 @@ type TemplateFile struct {
 	filepath     string
 	installation string // optional for defaults
 	app          string
-	values       map[string]*TemplateValue
-	paths        map[string]bool
+
+	// values map contains values requested in template using template's dot
+	// notation, e.g. '{{ .some.value }}'
+	values map[string]*TemplateValue
+	// paths map contains all paths in template extracted by valuemodifier/path
+	paths map[string]bool
 
 	sourceBytes    []byte
 	sourceTemplate *template.Template
@@ -121,7 +125,7 @@ func NewTemplateFile(filepath string, body []byte) (*TemplateFile, error) {
 	}
 
 	// extract templated values and all paths from the template
-	allValues := map[string]*TemplateValue{}
+	values := map[string]*TemplateValue{}
 	paths := map[string]bool{}
 	{
 		t, err := template.
@@ -143,13 +147,13 @@ func NewTemplateFile(filepath string, body []byte) (*TemplateFile, error) {
 			nodePaths := templatePathPattern.FindAllString(node.String(), -1)
 			for _, np := range nodePaths {
 				normalPath := NormalPath(np)
-				if _, ok := allValues[normalPath]; !ok {
-					allValues[normalPath] = &TemplateValue{
+				if _, ok := values[normalPath]; !ok {
+					values[normalPath] = &TemplateValue{
 						Path:            normalPath,
 						OccurrenceCount: 1,
 					}
 				} else {
-					allValues[normalPath].OccurrenceCount += 1
+					values[normalPath].OccurrenceCount += 1
 				}
 			}
 		}
@@ -186,7 +190,7 @@ func NewTemplateFile(filepath string, body []byte) (*TemplateFile, error) {
 			}
 		}
 	}
-	tf.values = allValues
+	tf.values = values
 	tf.paths = paths
 
 	// fill in installation and app if possible
