@@ -1,4 +1,4 @@
-//nolint:deadcode
+//nolint:deadcode,unused
 // TODO: (kuba): This file will either be used for checking secrets, or dropped
 // altogether.
 package lint
