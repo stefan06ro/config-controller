@@ -1,6 +1,7 @@
 package lint
 
 import (
+	"bytes"
 	"html/template"
 	"regexp"
 	"strings"
@@ -43,6 +44,7 @@ type TemplateFile struct {
 	installation string // optional for defaults
 	app          string
 	values       map[string]*TemplateValue
+	paths        map[string]bool
 
 	sourceBytes    []byte
 	sourceTemplate *template.Template
@@ -118,15 +120,21 @@ func NewTemplateFile(filepath string, body []byte) (*TemplateFile, error) {
 		sourceBytes: body,
 	}
 
-	// extract templated values from template
+	// extract templated values and all paths from the template
 	allValues := map[string]*TemplateValue{}
+	paths := map[string]bool{}
 	{
-		t, err := template.New(filepath).Funcs(fMap).Parse(string(body))
+		t, err := template.
+			New(filepath).
+			Funcs(fMap).
+			Option("missingkey=invalid").
+			Parse(string(body))
 		if err != nil {
 			return nil, microerror.Mask(err)
 		}
 		tf.sourceTemplate = t
 
+		// extract all values
 		for _, node := range t.Tree.Root.Nodes {
 			if node.Type() == parse.NodeText {
 				continue
@@ -145,8 +153,41 @@ func NewTemplateFile(filepath string, body []byte) (*TemplateFile, error) {
 				}
 			}
 		}
+
+		// extract all paths
+		if strings.HasSuffix(filepath, "values.yaml.patch") {
+			output := bytes.NewBuffer([]byte{})
+			var data interface{}
+			// Render template without values. All templated values will be
+			// replaced by default zero values: "" for string, 0 for int, false for
+			// bool etc.
+			err = t.Execute(output, data)
+			if err != nil {
+				return nil, microerror.Mask(err)
+			}
+
+			c := pathmodifier.Config{
+				InputBytes: output.Bytes(),
+				Separator:  ".",
+			}
+
+			svc, err := pathmodifier.New(c)
+			if err != nil {
+				return nil, microerror.Mask(err)
+			}
+
+			pathList, err := svc.All()
+			if err != nil {
+				return nil, microerror.Mask(err)
+			}
+
+			for _, p := range pathList {
+				paths[p] = true
+			}
+		}
 	}
 	tf.values = allValues
+	tf.paths = paths
 
 	// fill in installation and app if possible
 	{
@@ -162,16 +203,6 @@ func NewTemplateFile(filepath string, body []byte) (*TemplateFile, error) {
 	}
 
 	return tf, nil
-}
-
-func (t TemplateFile) CopyTemplate() *template.Template {
-	return template.Must(
-		template.
-			New(t.filepath).
-			Funcs(fMap).
-			Parse(string(t.sourceBytes)),
-	)
-
 }
 
 func NormalPath(path string) string {

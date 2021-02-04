@@ -1,11 +1,8 @@
 package lint
 
 import (
-	"bytes"
 	"fmt"
 	"reflect"
-
-	pathmodifier "github.com/giantswarm/valuemodifier/path"
 )
 
 const (
@@ -116,34 +113,10 @@ func UnusedPatchableAppValues(d *Discovery) (errors []string) {
 
 			used := false
 			for _, templatePatch := range d.TemplatePatches {
-				// render template with zero data
-				t := templatePatch.CopyTemplate().Option("missingkey=zero")
-				output := bytes.NewBuffer([]byte{})
-				var data interface{}
-				err := t.Execute(output, data)
-				if err != nil {
-					panic(err)
+				if _, ok := templatePatch.paths[path]; ok {
+					used = true
+					break
 				}
-
-				c := pathmodifier.Config{
-					InputBytes: output.Bytes(),
-					Separator:  ".",
-				}
-
-				svc, err := pathmodifier.New(c)
-				if err != nil {
-					panic(err)
-				}
-
-				_, err = svc.Get(path)
-				if err != nil && pathmodifier.IsNotFound(err) {
-					continue
-				} else if err != nil {
-					panic(err)
-				}
-
-				used = true
-				break
 			}
 
 			if used {

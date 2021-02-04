@@ -17,7 +17,7 @@ require (
 	github.com/giantswarm/microkit v0.2.2
 	github.com/giantswarm/micrologger v0.5.0
 	github.com/giantswarm/operatorkit/v4 v4.0.0
-	github.com/giantswarm/valuemodifier v0.3.0
+	github.com/giantswarm/valuemodifier v0.3.1-0.20210204150625-81f3e232e6b8
 	github.com/go-git/go-billy/v5 v5.0.0
 	github.com/go-git/go-git/v5 v5.2.0
 	github.com/go-test/deep v1.0.7 // indirect
