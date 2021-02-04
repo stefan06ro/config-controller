@@ -24,87 +24,17 @@ type Discovery struct {
 	TemplatePatchesPerInstallation map[string][]*TemplateFile
 }
 
-func (d Discovery) GetConfigPatch(installation string) (*ValueFile, bool) {
-	for _, patch := range d.ConfigPatches {
-		if patch.installation == installation {
+func (d Discovery) GetAppTemplatePatch(installation, app string) (*TemplateFile, bool) {
+	templatePatches, ok := d.TemplatePatchesPerInstallation[installation]
+	if !ok {
+		return nil, false
+	}
+	for _, patch := range templatePatches {
+		if patch.app == app {
 			return patch, true
 		}
 	}
 	return nil, false
-}
-
-func (d Discovery) GetAppTemplate(app string) (*TemplateFile, bool) {
-	for _, template := range d.Templates {
-		if template.app == app {
-			return template, true
-		}
-	}
-	return nil, false
-}
-
-func (d Discovery) GetAppTemplatePatch(installation, app string) (*TemplateFile, bool) {
-	for _, template := range d.TemplatePatches {
-		if template.installation == installation && template.app == app {
-			return template, true
-		}
-	}
-	return nil, false
-}
-
-func (d *Discovery) populateValuePaths() error {
-	// 1. Mark all overshadowed valuePaths in config.yaml
-	for _, configPatch := range d.ConfigPatches {
-		for path := range configPatch.paths {
-			if original, ok := d.Config.paths[path]; ok {
-				original.OvershadowedBy = append(original.OvershadowedBy, configPatch)
-			}
-		}
-	}
-	// 2. Check templates for all apps x installations, then set UsedBy fields
-	// in config or config patches.
-	for _, installation := range d.Installations {
-		for _, app := range d.Apps {
-			configPatch, ok := d.GetConfigPatch(installation)
-			if !ok {
-				configPatch = nil
-			}
-
-			// mark all fields used by the templatePatch
-			if templatePatch, ok := d.GetAppTemplatePatch(installation, app); ok {
-				populatePathsWithSource(templatePatch, d.Config, configPatch)
-			}
-
-			// mark all fields used by the defaultTemplate
-			if defaultTemplate, ok := d.GetAppTemplate(app); ok {
-				populatePathsWithSource(defaultTemplate, d.Config, configPatch)
-			}
-		}
-	}
-
-	return nil
-}
-
-func populatePathsWithSource(source *TemplateFile, config, configPatch *ValueFile) {
-	for path, templatePath := range source.values {
-		if configPatch != nil {
-			valuePath, valuePathOk := configPatch.paths[path]
-			if valuePathOk {
-				// config patch exists and contains the path
-				valuePath.UsedBy = appendUniqueUsedBy(valuePath.UsedBy, source)
-				continue
-			}
-		}
-
-		valuePath, valuePathOk := config.paths[path]
-		if valuePathOk {
-			// the value comes from default config
-			valuePath.UsedBy = appendUniqueUsedBy(valuePath.UsedBy, source)
-			continue
-		}
-
-		// value is missing from config; linter will check if it's patched
-		templatePath.MayBeMissing = true
-	}
 }
 
 func NewDiscovery(fs generator.Filesystem) (*Discovery, error) {
@@ -233,6 +163,65 @@ func NewDiscovery(fs generator.Filesystem) (*Discovery, error) {
 	}
 
 	return d, nil
+}
+
+// populateValuePaths fills UsedBy and OvershadowedBy fields in all ValuePath
+// structs in d.Config and d.ConfigPatches. This allows linter to find unused
+// values easier.
+func (d *Discovery) populateValuePaths() error {
+	// 1. Mark all overshadowed valuePaths in config.yaml
+	for _, configPatch := range d.ConfigPatches {
+		for path := range configPatch.paths {
+			if original, ok := d.Config.paths[path]; ok {
+				original.OvershadowedBy = append(original.OvershadowedBy, configPatch)
+			}
+		}
+	}
+	// 2. Check templates for all apps x installations, then set UsedBy fields
+	// in Config or ConfigPatches
+	for _, installation := range d.Installations {
+		for _, app := range d.Apps {
+			configPatch, ok := d.ConfigPatchesPerInstallation[installation]
+			if !ok {
+				configPatch = nil
+			}
+
+			// mark all fields used by app template's patch
+			if templatePatch, ok := d.GetAppTemplatePatch(installation, app); ok {
+				populatePathsWithUsedBy(templatePatch, d.Config, configPatch)
+			}
+
+			// mark all fields used by the app's default template
+			if defaultTemplate, ok := d.TemplatesPerApp[app]; ok {
+				populatePathsWithUsedBy(defaultTemplate, d.Config, configPatch)
+			}
+		}
+	}
+
+	return nil
+}
+
+func populatePathsWithUsedBy(source *TemplateFile, config, configPatch *ValueFile) {
+	for path, templatePath := range source.values {
+		if configPatch != nil {
+			valuePath, valuePathOk := configPatch.paths[path]
+			if valuePathOk {
+				// config patch exists and contains the path
+				valuePath.UsedBy = appendUniqueUsedBy(valuePath.UsedBy, source)
+				continue
+			}
+		}
+
+		valuePath, valuePathOk := config.paths[path]
+		if valuePathOk {
+			// the value comes from default config
+			valuePath.UsedBy = appendUniqueUsedBy(valuePath.UsedBy, source)
+			continue
+		}
+
+		// value is missing from config; linter will check if it's patched
+		templatePath.MayBeMissing = true
+	}
 }
 
 func appendUniqueUsedBy(list []*TemplateFile, t *TemplateFile) []*TemplateFile {
