@@ -14,6 +14,7 @@ type Discovery struct {
 	ConfigPatches   []*ValueFile
 	Templates       []*TemplateFile
 	TemplatePatches []*TemplateFile
+	Include         []*TemplateFile
 
 	Installations []string
 	Apps          []string
@@ -147,6 +148,27 @@ func NewDiscovery(fs generator.Filesystem) (*Discovery, error) {
 				templatePatch,
 			)
 		}
+	}
+
+	// collect include files
+	includeFiles, err := fs.ReadDir("include/")
+	if err != nil {
+		return nil, microerror.Mask(err)
+	}
+	for _, includeFile := range includeFiles {
+		if includeFile.IsDir() {
+			continue
+		}
+		filepath := fmt.Sprintf("include/%s", includeFile.Name())
+		body, err := fs.ReadFile(filepath)
+		if err != nil {
+			return nil, microerror.Mask(err)
+		}
+		includeTemplate, err := NewTemplateFile(filepath, body)
+		if err != nil {
+			return nil, microerror.Mask(err)
+		}
+		d.Include = append(d.Include, includeTemplate)
 	}
 
 	for k := range uniqueInstallations {
