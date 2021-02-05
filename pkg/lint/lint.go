@@ -2,6 +2,8 @@ package lint
 
 import (
 	"reflect"
+	"regexp"
+	"runtime"
 )
 
 const (
@@ -128,4 +130,25 @@ func LintUndefinedTemplatePatchValues(d *Discovery) (messages LinterMessages) {
 		}
 	}
 	return messages
+}
+
+//------ helper funcs -------
+func GetFilteredLinterFunctions(filters []string) []LinterFunc {
+	if filters == nil || len(filters) == 0 {
+		return AllLinterFunctions
+	}
+
+	functions := []LinterFunc{}
+	for _, function := range AllLinterFunctions {
+		name := runtime.FuncForPC(reflect.ValueOf(function).Pointer()).Name()
+		for _, filter := range filters {
+			re := regexp.MustCompile(filter)
+			if re.MatchString(name) {
+				functions = append(functions, function)
+				break
+			}
+		}
+	}
+
+	return functions
 }

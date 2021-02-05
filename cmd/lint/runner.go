@@ -76,20 +76,29 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 		return microerror.Mask(err)
 	}
 
-	errorsFound := 0
-	for _, f := range lint.AllLinterFunctions {
+	messageCount := 0
+	linterFuncs := lint.GetFilteredLinterFunctions(r.flag.FilterFunctions)
+	fmt.Printf("Linting using %d functions\n\n", len(linterFuncs))
+
+	for _, f := range linterFuncs {
 		messages := f(discovery)
-		for _, e := range messages {
-			fmt.Println(e.Message(true, true))
-			errorsFound += 1
-			if r.flag.MaxErrors > 0 && errorsFound >= r.flag.MaxErrors {
+		for _, msg := range messages {
+			if r.flag.OnlyErrors && !msg.IsError() {
+				continue
+			}
+
+			fmt.Println(msg.Message(!r.flag.NoFuncNames, !r.flag.NoDescriptions))
+			messageCount += 1
+
+			if r.flag.MaxMessages > 0 && messageCount >= r.flag.MaxMessages {
 				fmt.Println("-------------------------")
-				fmt.Println("Too many errors, skipping the rest of checks")
-				fmt.Printf("Run linter with '--%s 0' to see all the errors\n", flagMaxErrors)
+				fmt.Println("Too many messages, skipping the rest of checks")
+				fmt.Printf("Run linter with '--%s 0' to see all the errors\n", flagMaxMessages)
 				return nil
 			}
 		}
 	}
-	fmt.Printf("-------------------------\nFound %d errors\n", errorsFound)
+	fmt.Printf("-------------------------\nFound %d issues\n", messageCount)
+	// TODO: RETURN ERROR CODE!!!!
 	return nil
 }
