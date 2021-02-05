@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"reflect"
-	"runtime"
 
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
@@ -19,19 +17,6 @@ import (
 const (
 	owner = "giantswarm"
 	repo  = "config"
-
-	separator = "-------------------------"
-)
-
-var (
-	linterFuncs = []lint.LinterFunc{
-		lint.LintDuplicateConfigValues,
-		lint.LintOvershadowedConfigValues,
-		lint.LintUnusedConfigPatchValues,
-		lint.LintUnusedConfigValues,
-		lint.LintUndefinedTemplateValues,
-		lint.LintUndefinedTemplatePatchValues,
-	}
 )
 
 type runner struct {
@@ -92,22 +77,19 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 	}
 
 	errorsFound := 0
-	for _, f := range linterFuncs {
-		errors := f(discovery)
-		if len(errors) > 0 {
-			fmt.Println(separator + " " + runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Name() + " " + separator)
-		}
-		for _, e := range errors {
-			fmt.Println(e)
+	for _, f := range lint.AllLinterFunctions {
+		messages := f(discovery)
+		for _, e := range messages {
+			fmt.Println(e.Message(true, true))
 			errorsFound += 1
 			if r.flag.MaxErrors > 0 && errorsFound >= r.flag.MaxErrors {
-				fmt.Println(separator)
+				fmt.Println("-------------------------")
 				fmt.Println("Too many errors, skipping the rest of checks")
 				fmt.Printf("Run linter with '--%s 0' to see all the errors\n", flagMaxErrors)
 				return nil
 			}
 		}
 	}
-	fmt.Printf("%s\nFound %d errors\n", separator, errorsFound)
+	fmt.Printf("-------------------------\nFound %d errors\n", errorsFound)
 	return nil
 }

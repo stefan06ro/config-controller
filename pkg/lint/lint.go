@@ -1,7 +1,6 @@
 package lint
 
 import (
-	"fmt"
 	"reflect"
 )
 
@@ -10,100 +9,92 @@ const (
 	patchUsedByErrorThreshold float64 = 0.25
 )
 
-// TODO: kuba - how about having custom error type
-type LinterFunc func(d *Discovery) (errors LinterMessages)
+type LinterFunc func(d *Discovery) (messages LinterMessages)
 
-func LintDuplicateConfigValues(d *Discovery) (errors LinterMessages) {
+var AllLinterFunctions = []LinterFunc{
+	LintDuplicateConfigValues,
+	LintOvershadowedConfigValues,
+	LintUnusedConfigPatchValues,
+	LintUnusedConfigValues,
+	LintUndefinedTemplateValues,
+	LintUndefinedTemplatePatchValues,
+}
+
+func LintDuplicateConfigValues(d *Discovery) (messages LinterMessages) {
 	for path, defaultPath := range d.Config.paths {
 		for _, overshadowingPatch := range defaultPath.OvershadowedBy {
 			patchedPath := overshadowingPatch.paths[path]
 			if reflect.DeepEqual(defaultPath.Value, patchedPath.Value) {
-				errors = append(
-					errors,
-					fmt.Sprintf(
-						"path %q in %q is a duplicate of the same path in config.yaml",
-						path, overshadowingPatch.filepath,
-					),
+				messages = append(
+					messages,
+					NewError(overshadowingPatch.filepath, path, "is duplicate of the same path in %s", d.Config.filepath),
 				)
 			}
 		}
 	}
-	return errors
+	return messages
 }
 
-func LintOvershadowedConfigValues(d *Discovery) (errors LinterMessages) {
+func LintOvershadowedConfigValues(d *Discovery) (messages LinterMessages) {
 	if len(d.Installations) == 0 {
 		return // avoid division by 0
 	}
 	for path, valuePath := range d.Config.paths {
-		if float64(len(valuePath.OvershadowedBy)/len(d.Installations)) >= overshadowErrorThreshold {
-			errors = append(
-				errors,
-				fmt.Sprintf(
-					"path %q in config.yaml is overshadowed by %d/%d patches; consider removing it from config.yaml",
-					path, len(valuePath.OvershadowedBy), len(d.Installations),
-				),
+		if len(valuePath.OvershadowedBy) == len(d.Installations) {
+			messages = append(
+				messages,
+				NewError(d.Config.filepath, path, "is overshadowed by all config.yaml.patch files"),
 			)
+		} else if float64(len(valuePath.OvershadowedBy)/len(d.Installations)) >= overshadowErrorThreshold {
+			msg := NewMessage(
+				d.Config.filepath, path, "is overshadowed by %d/%d patches",
+				len(valuePath.OvershadowedBy), len(d.Installations),
+			)
+			msg.SetDescription("consider removing it from %s", d.Config.filepath)
+			messages = append(messages, msg)
 		}
 	}
-	return errors
+	return messages
 }
 
-func LintUnusedConfigPatchValues(d *Discovery) (errors LinterMessages) {
+func LintUnusedConfigPatchValues(d *Discovery) (messages LinterMessages) {
 	for _, configPatch := range d.ConfigPatches {
 		if len(d.AppsPerInstallation[configPatch.installation]) == 0 {
 			continue // avoid division by 0
 		}
 		for path, valuePath := range configPatch.paths {
 			if len(valuePath.UsedBy) == 0 {
-				errors = append(
-					errors,
-					fmt.Sprintf(
-						"path %q in %q is *unused*; consider removing it",
-						path, configPatch.filepath,
-					),
-				)
+				messages = append(messages, NewError(configPatch.filepath, path, "is unused"))
 			} else if float64(len(valuePath.UsedBy)/len(d.AppsPerInstallation[configPatch.installation])) <= patchUsedByErrorThreshold {
-				errors = append(
-					errors,
-					fmt.Sprintf(
-						"path %q in %q is used by %d/%d apps; consider moving it to app templates",
-						path, configPatch.filepath, len(valuePath.UsedBy), len(d.AppsPerInstallation[configPatch.installation]),
-					),
+				msg := NewMessage(
+					configPatch.filepath, path, "is used by %d/%d apps",
+					len(valuePath.UsedBy), len(d.AppsPerInstallation[configPatch.installation]),
 				)
+				msg.SetDescription("consider moving it to respective app templates")
+				messages = append(messages, msg)
 			}
 		}
 	}
-	return errors
+	return messages
 }
 
-func LintUnusedConfigValues(d *Discovery) (errors LinterMessages) {
+func LintUnusedConfigValues(d *Discovery) (messages LinterMessages) {
 	if len(d.Installations) == 0 || len(d.Apps) == 0 {
 		return // what's the point, nothing is defined
 	}
 	for path, valuePath := range d.Config.paths {
 		if len(valuePath.UsedBy) == 0 {
-			errors = append(
-				errors,
-				fmt.Sprintf(
-					"path %q in %q is *unused*; consider removing it",
-					path, d.Config.filepath,
-				),
-			)
+			messages = append(messages, NewError(d.Config.filepath, path, "is unused"))
 		} else if len(valuePath.UsedBy) == 1 {
-			errors = append(
-				errors,
-				fmt.Sprintf(
-					"path %q in %q is used by just one app in %q; consider moving it",
-					path, d.Config.filepath, valuePath.UsedBy[0].filepath,
-				),
-			)
+			msg := NewMessage(d.Config.filepath, path, "is used by just one app: %s", valuePath.UsedBy[0].app)
+			msg.SetDescription("consider moving this value to %s template or template patch", valuePath.UsedBy[0].app)
+			messages = append(messages, msg)
 		}
 	}
-	return errors
+	return messages
 }
 
-func LintUndefinedTemplateValues(d *Discovery) (errors LinterMessages) {
+func LintUndefinedTemplateValues(d *Discovery) (messages LinterMessages) {
 	for _, template := range d.Templates {
 		for path, value := range template.values {
 			if !value.MayBeMissing {
@@ -121,32 +112,20 @@ func LintUndefinedTemplateValues(d *Discovery) (errors LinterMessages) {
 			if used {
 				continue
 			}
-			errors = append(
-				errors,
-				fmt.Sprintf(
-					"path %q in %q is never configured; consider removing it",
-					path, template.filepath,
-				),
-			)
+			messages = append(messages, NewError(template.filepath, path, "is templated but never configured"))
 		}
 	}
-	return errors
+	return messages
 }
 
-func LintUndefinedTemplatePatchValues(d *Discovery) (errors LinterMessages) {
+func LintUndefinedTemplatePatchValues(d *Discovery) (messages LinterMessages) {
 	for _, templatePatch := range d.TemplatePatches {
 		for path, value := range templatePatch.values {
 			if !value.MayBeMissing {
 				continue
 			}
-			errors = append(
-				errors,
-				fmt.Sprintf(
-					"path %q in %q is never configured; consider removing it",
-					path, templatePatch.filepath,
-				),
-			)
+			messages = append(messages, NewError(templatePatch.filepath, path, "is templated but never configured"))
 		}
 	}
-	return errors
+	return messages
 }
