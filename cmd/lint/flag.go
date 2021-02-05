@@ -17,7 +17,7 @@ const (
 	flagInstallation    = "installation"
 	flagMaxMessages     = "max-messages"
 	flagNoDescriptions  = "no-descriptions"
-	flagNoFuncNames     = "no-func-names"
+	flagNoFuncNames     = "no-function-names"
 	flagOnlyErrors      = "only-errors"
 
 	envConfigControllerGithubToken = "CONFIG_CONTROLLER_GITHUB_TOKEN" //nolint:gosec
