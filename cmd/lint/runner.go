@@ -97,7 +97,7 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 				fmt.Println("-------------------------")
 				fmt.Println("Too many messages, skipping the rest of checks")
 				fmt.Printf("Run linter with '--%s 0' to see all the errors\n", flagMaxMessages)
-				return nil
+				return microerror.Mask(linterFoundIssuesError)
 			}
 		}
 	}
