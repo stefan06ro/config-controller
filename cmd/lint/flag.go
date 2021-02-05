@@ -37,7 +37,6 @@ type flag struct {
 }
 
 func (f *flag) Init(cmd *cobra.Command) {
-	// TODO: flags are optional if you wish to narrow down linter's scope
 	cmd.Flags().StringVar(&f.App, flagApp, "", `Name of an application to generate the config for (e.g. "kvm-operator").`)
 	cmd.Flags().StringVar(&f.Branch, flagBranch, "", "Branch of giantswarm/config used to generate configuraton.")
 	cmd.Flags().StringVar(&f.ConfigVersion, flagConfigVersion, "", `Major part of the configuration version to use for generation (e.g. "v2").`)
