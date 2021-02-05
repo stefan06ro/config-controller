@@ -132,7 +132,7 @@ func LintUndefinedTemplatePatchValues(d *Discovery) (messages LinterMessages) {
 
 //------ helper funcs -------
 func GetFilteredLinterFunctions(filters []string) []LinterFunc {
-	if filters == nil || len(filters) == 0 {
+	if len(filters) == 0 {
 		return AllLinterFunctions
 	}
 
