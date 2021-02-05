@@ -3,6 +3,13 @@ package lint
 import (
 	"fmt"
 	"sort"
+
+	"github.com/fatih/color"
+)
+
+var (
+	red  = color.New(color.FgRed).SprintFunc()
+	blue = color.New(color.FgBlue).SprintFunc()
 )
 
 type LinterMessage interface {
@@ -28,6 +35,34 @@ type Suggestion struct {
 
 func (e Error) IsError() bool {
 	return true
+}
+
+func (e Error) String() string {
+	newlineDescription := ""
+	if e.description != "" {
+		newlineDescription = "\n" + e.description
+	}
+	return fmt.Sprintf(
+		"%s: .%s %s %s",
+		red(e.sourceFile),
+		red(e.path),
+		e.message,
+		newlineDescription,
+	)
+}
+
+func (s Suggestion) String() string {
+	newlineDescription := ""
+	if s.description != "" {
+		newlineDescription = "\n" + s.description
+	}
+	return fmt.Sprintf(
+		"%s: .%s %s %s",
+		blue(s.sourceFile),
+		blue(s.path),
+		s.message,
+		newlineDescription,
+	)
 }
 
 func (s Suggestion) IsError() bool {
