@@ -11,9 +11,9 @@ const (
 )
 
 // TODO: kuba - how about having custom error type
-type LinterFunc func(d *Discovery) (errors []string)
+type LinterFunc func(d *Discovery) (errors LinterMessages)
 
-func LintDuplicateConfigValues(d *Discovery) (errors []string) {
+func LintDuplicateConfigValues(d *Discovery) (errors LinterMessages) {
 	for path, defaultPath := range d.Config.paths {
 		for _, overshadowingPatch := range defaultPath.OvershadowedBy {
 			patchedPath := overshadowingPatch.paths[path]
@@ -31,7 +31,7 @@ func LintDuplicateConfigValues(d *Discovery) (errors []string) {
 	return errors
 }
 
-func LintOvershadowedConfigValues(d *Discovery) (errors []string) {
+func LintOvershadowedConfigValues(d *Discovery) (errors LinterMessages) {
 	if len(d.Installations) == 0 {
 		return // avoid division by 0
 	}
@@ -49,7 +49,7 @@ func LintOvershadowedConfigValues(d *Discovery) (errors []string) {
 	return errors
 }
 
-func LintUnusedConfigPatchValues(d *Discovery) (errors []string) {
+func LintUnusedConfigPatchValues(d *Discovery) (errors LinterMessages) {
 	for _, configPatch := range d.ConfigPatches {
 		if len(d.AppsPerInstallation[configPatch.installation]) == 0 {
 			continue // avoid division by 0
@@ -77,7 +77,7 @@ func LintUnusedConfigPatchValues(d *Discovery) (errors []string) {
 	return errors
 }
 
-func LintUnusedConfigValues(d *Discovery) (errors []string) {
+func LintUnusedConfigValues(d *Discovery) (errors LinterMessages) {
 	if len(d.Installations) == 0 || len(d.Apps) == 0 {
 		return // what's the point, nothing is defined
 	}
@@ -103,7 +103,7 @@ func LintUnusedConfigValues(d *Discovery) (errors []string) {
 	return errors
 }
 
-func LintUndefinedTemplateValues(d *Discovery) (errors []string) {
+func LintUndefinedTemplateValues(d *Discovery) (errors LinterMessages) {
 	for _, template := range d.Templates {
 		for path, value := range template.values {
 			if !value.MayBeMissing {
@@ -133,7 +133,7 @@ func LintUndefinedTemplateValues(d *Discovery) (errors []string) {
 	return errors
 }
 
-func LintUndefinedTemplatePatchValues(d *Discovery) (errors []string) {
+func LintUndefinedTemplatePatchValues(d *Discovery) (errors LinterMessages) {
 	for _, templatePatch := range d.TemplatePatches {
 		for path, value := range templatePatch.values {
 			if !value.MayBeMissing {

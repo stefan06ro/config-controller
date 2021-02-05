@@ -2,7 +2,6 @@ package lint
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/fatih/color"
 )
@@ -22,26 +21,28 @@ type LinterMessage struct {
 	description string // optional
 }
 
-func NewError(sourceFile, path, message string, description ...string) LinterMessage {
-	desc := strings.Join(description, "\n")
+func NewError(sourceFile, path, message string, arg ...interface{}) LinterMessage {
 	return LinterMessage{
 		isError:     true,
 		sourceFile:  sourceFile,
 		path:        path,
-		message:     message,
-		description: desc,
+		message:     fmt.Sprintf(message, arg...),
+		description: "",
 	}
 }
 
-func NewMessage(sourceFile, path, message string, description ...string) LinterMessage {
-	desc := strings.Join(description, "\n")
+func NewMessage(sourceFile, path, message string, arg ...interface{}) LinterMessage {
 	return LinterMessage{
 		isError:     false,
 		sourceFile:  sourceFile,
 		path:        path,
-		message:     message,
-		description: desc,
+		message:     fmt.Sprintf(message, arg...),
+		description: "",
 	}
+}
+
+func (lm *LinterMessage) SetDescription(desc string, arg ...interface{}) {
+	lm.description = fmt.Sprintf(desc, arg...)
 }
 
 func (lm LinterMessage) IsError() bool {
