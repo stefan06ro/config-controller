@@ -46,9 +46,9 @@ func NewMessage(sourceFile, path, message string, arg ...interface{}) LinterMess
 	}
 }
 
-// TODO: WithDescription()
-func (lm *LinterMessage) SetDescription(desc string, arg ...interface{}) {
+func (lm LinterMessage) WithDescription(desc string, arg ...interface{}) LinterMessage {
 	lm.description = fmt.Sprintf(desc, arg...)
+	return lm
 }
 
 func (lm LinterMessage) IsError() bool {

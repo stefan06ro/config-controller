@@ -51,8 +51,7 @@ func LintOvershadowedConfigValues(d *Discovery) (messages LinterMessages) {
 			msg := NewMessage(
 				d.Config.filepath, path, "is overshadowed by %d/%d patches",
 				len(valuePath.OvershadowedBy), len(d.Installations),
-			)
-			msg.SetDescription("consider removing it from %s", d.Config.filepath)
+			).WithDescription("consider removing it from %s", d.Config.filepath)
 			messages = append(messages, msg)
 		}
 	}
@@ -71,8 +70,7 @@ func LintUnusedConfigPatchValues(d *Discovery) (messages LinterMessages) {
 				msg := NewMessage(
 					configPatch.filepath, path, "is used by %d/%d apps",
 					len(valuePath.UsedBy), len(d.AppsPerInstallation[configPatch.installation]),
-				)
-				msg.SetDescription("consider moving it to respective app templates")
+				).WithDescription("consider moving it to respective app templates")
 				messages = append(messages, msg)
 			}
 		}
@@ -88,8 +86,8 @@ func LintUnusedConfigValues(d *Discovery) (messages LinterMessages) {
 		if len(valuePath.UsedBy) == 0 {
 			messages = append(messages, NewError(d.Config.filepath, path, "is unused"))
 		} else if len(valuePath.UsedBy) == 1 {
-			msg := NewMessage(d.Config.filepath, path, "is used by just one app: %s", valuePath.UsedBy[0].app)
-			msg.SetDescription("consider moving this value to %s template or template patch", valuePath.UsedBy[0].app)
+			msg := NewMessage(d.Config.filepath, path, "is used by just one app: %s", valuePath.UsedBy[0].app).
+				WithDescription("consider moving this value to %s template or template patch", valuePath.UsedBy[0].app)
 			messages = append(messages, msg)
 		}
 	}

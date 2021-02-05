@@ -41,7 +41,7 @@ func (f *flag) Init(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&f.App, flagApp, "", `Name of an application to generate the config for (e.g. "kvm-operator").`)
 	cmd.Flags().StringVar(&f.Branch, flagBranch, "", "Branch of giantswarm/config used to generate configuraton.")
 	cmd.Flags().StringVar(&f.ConfigVersion, flagConfigVersion, "", `Major part of the configuration version to use for generation (e.g. "v2").`)
-	cmd.Flags().StringSliceVar(&f.FilterFunctions, flagFilterFunctions, []string{}, `Enables filtering linter functions by supplying a list of patterns to match, e.g. ("Lint.*,LintUnusedConfigValues").`)
+	cmd.Flags().StringSliceVar(&f.FilterFunctions, flagFilterFunctions, []string{}, `Enables filtering linter functions by supplying a list of patterns to match, (e.g. "Lint.*,LintUnusedConfigValues").`)
 	cmd.Flags().StringVar(&f.Installation, flagInstallation, "", `Installation codename (e.g. "gauss").`)
 	cmd.Flags().StringVar(&f.GitHubToken, flagGithubToken, "", fmt.Sprintf(`GitHub token to use for "opsctl create vaultconfig" calls. Defaults to the value of %s env var.`, envConfigControllerGithubToken))
 	cmd.Flags().IntVar(&f.MaxMessages, flagMaxMessages, 50, "Max number of linter messages to display. Unlimited output if set to 0. Defaults to 50.")
