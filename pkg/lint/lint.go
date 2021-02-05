@@ -13,10 +13,10 @@ const (
 type LinterFunc func(d *Discovery) (messages LinterMessages)
 
 var AllLinterFunctions = []LinterFunc{
+	LintUnusedConfigValues,
 	LintDuplicateConfigValues,
 	LintOvershadowedConfigValues,
 	LintUnusedConfigPatchValues,
-	LintUnusedConfigValues,
 	LintUndefinedTemplateValues,
 	LintUndefinedTemplatePatchValues,
 }
