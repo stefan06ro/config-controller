@@ -7,8 +7,7 @@ import (
 )
 
 const (
-	overshadowErrorThreshold  float64 = 0.75
-	patchUsedByErrorThreshold float64 = 0.25
+	overshadowErrorThreshold float64 = 0.75
 )
 
 type LinterFunc func(d *Discovery) (messages LinterMessages)
@@ -64,15 +63,10 @@ func LintUnusedConfigPatchValues(d *Discovery) (messages LinterMessages) {
 			continue // avoid division by 0
 		}
 		for path, valuePath := range configPatch.paths {
-			if len(valuePath.UsedBy) == 0 {
-				messages = append(messages, NewError(configPatch.filepath, path, "is unused"))
-			} else if float64(len(valuePath.UsedBy)/len(d.AppsPerInstallation[configPatch.installation])) <= patchUsedByErrorThreshold {
-				msg := NewMessage(
-					configPatch.filepath, path, "is used by %d/%d apps",
-					len(valuePath.UsedBy), len(d.AppsPerInstallation[configPatch.installation]),
-				).WithDescription("consider moving it to respective app templates")
-				messages = append(messages, msg)
+			if len(valuePath.UsedBy) > 0 {
+				continue
 			}
+			messages = append(messages, NewError(configPatch.filepath, path, "is unused"))
 		}
 	}
 	return messages

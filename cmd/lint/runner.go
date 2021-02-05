@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sort"
 
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
@@ -85,6 +86,7 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 
 	for _, f := range linterFuncs {
 		messages := f(discovery)
+		sort.Sort(messages)
 		for _, msg := range messages {
 			if r.flag.OnlyErrors && !msg.IsError() {
 				continue
