@@ -2,7 +2,6 @@ package lint
 
 import (
 	"fmt"
-	"sort"
 
 	"github.com/fatih/color"
 )
@@ -12,61 +11,38 @@ var (
 	blue = color.New(color.FgBlue).SprintFunc()
 )
 
-type LinterMessage interface {
-	fmt.Stringer
-}
-
 type LinterMessages []LinterMessage
 
-type linterMessage struct {
+type LinterMessage struct {
+	isError     bool
 	sourceFile  string
 	path        string
 	message     string
 	description string // optional
 }
 
-type Error struct {
-	linterMessage
+func (lm LinterMessage) IsError() bool {
+	return lm.isError
 }
 
-type Suggestion struct {
-	linterMessage
-}
-
-func (e Error) IsError() bool {
-	return true
-}
-
-func (e Error) String() string {
+func (lm LinterMessage) String() string {
 	newlineDescription := ""
-	if e.description != "" {
-		newlineDescription = "\n" + e.description
+	if lm.description != "" {
+		newlineDescription = "\n" + lm.description
 	}
+
+	outputColor := blue
+	if lm.isError {
+		outputColor = red
+	}
+
 	return fmt.Sprintf(
 		"%s: .%s %s %s",
-		red(e.sourceFile),
-		red(e.path),
-		e.message,
+		outputColor(lm.sourceFile),
+		outputColor(lm.path),
+		lm.message,
 		newlineDescription,
 	)
-}
-
-func (s Suggestion) String() string {
-	newlineDescription := ""
-	if s.description != "" {
-		newlineDescription = "\n" + s.description
-	}
-	return fmt.Sprintf(
-		"%s: .%s %s %s",
-		blue(s.sourceFile),
-		blue(s.path),
-		s.message,
-		newlineDescription,
-	)
-}
-
-func (s Suggestion) IsError() bool {
-	return false
 }
 
 // LinterMessages implements sort.Interface
@@ -76,16 +52,18 @@ func (m LinterMessages) Len() int {
 
 func (m LinterMessages) Less(i, j int) bool {
 	switch {
-	case m[i].IsError() == m[j].IsError():
+	case m[i].isError == m[j].isError:
 		switch {
 		case m[i].sourceFile == m[j].sourceFile:
 			return m[i].path <= m[j].path
 		default:
 			return m[i].sourceFile <= m[j].sourceFile
 		}
-	case m[i].IsError() && !m[j].IsError():
+	case m[i].isError && !m[j].isError:
 		return true
-	case !m[i].IsError() && m[j].IsError():
+	case !m[i].isError && m[j].isError:
+		return false
+	default: // this should never happen
 		return false
 	}
 }
