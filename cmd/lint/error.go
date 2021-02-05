@@ -29,3 +29,12 @@ var invalidFlagError = &microerror.Error{
 func IsInvalidFlag(err error) bool {
 	return microerror.Cause(err) == invalidFlagError
 }
+
+var linterFoundIssuesError = &microerror.Error{
+	Kind: "linterFoundIssuesError",
+}
+
+// IsLinterFoundIssues asserts linterFoundIssuesError.
+func IsLinterFoundIssues(err error) bool {
+	return microerror.Cause(err) == linterFoundIssuesError
+}

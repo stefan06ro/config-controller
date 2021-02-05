@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
@@ -35,7 +36,9 @@ func (r *runner) Run(cmd *cobra.Command, args []string) error {
 	}
 
 	err = r.run(ctx, cmd, args)
-	if err != nil {
+	if IsLinterFoundIssues(err) {
+		os.Exit(1)
+	} else if err != nil {
 		return microerror.Mask(err)
 	}
 
@@ -99,6 +102,8 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 		}
 	}
 	fmt.Printf("-------------------------\nFound %d issues\n", messageCount)
-	// TODO: RETURN ERROR CODE!!!!
+	if messageCount > 0 {
+		return microerror.Mask(linterFoundIssuesError)
+	}
 	return nil
 }
