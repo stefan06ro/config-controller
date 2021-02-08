@@ -147,12 +147,6 @@ func LintIncludeFiles(d *Discovery) (messages LinterMessages) {
 		}
 	}
 
-	for _, includeFile := range d.Include {
-		for _, filepath := range includeFile.includes {
-			used[filepath] = true
-		}
-	}
-
 	if reflect.DeepEqual(exist, used) {
 		return messages
 	}
