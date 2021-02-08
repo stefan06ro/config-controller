@@ -2,6 +2,7 @@ package lint
 
 import (
 	"fmt"
+	"log"
 	"sort"
 
 	"github.com/giantswarm/microerror"
@@ -23,13 +24,13 @@ type Discovery struct {
 	Installations []string
 	Apps          []string
 
-	AppsPerInstallation            map[string][]string
-	ConfigPatchesPerInstallation   map[string]*ValueFile
-	SecretsPerInstallation         map[string]*ValueFile
-	TemplatesPerApp                map[string]*TemplateFile
-	SecretTemplatesPerApp          map[string]*TemplateFile
-	TemplatePatchesPerInstallation map[string][]*TemplateFile
-	SecretTemplatePatchesPerApp    map[string]*TemplateFile
+	AppsPerInstallation                  map[string][]string
+	ConfigPatchesPerInstallation         map[string]*ValueFile
+	SecretsPerInstallation               map[string]*ValueFile
+	TemplatesPerApp                      map[string]*TemplateFile
+	SecretTemplatesPerApp                map[string]*TemplateFile
+	TemplatePatchesPerInstallation       map[string][]*TemplateFile
+	SecretTemplatePatchesPerInstallation map[string][]*TemplateFile
 }
 
 func (d Discovery) GetAppTemplatePatch(installation, app string) (*TemplateFile, bool) {
@@ -58,13 +59,13 @@ func NewDiscovery(fs generator.Filesystem) (*Discovery, error) {
 		Installations: []string{},
 		Apps:          []string{},
 
-		AppsPerInstallation:            map[string][]string{},
-		ConfigPatchesPerInstallation:   map[string]*ValueFile{},
-		SecretsPerInstallation:         map[string]*ValueFile{},
-		TemplatesPerApp:                map[string]*TemplateFile{},
-		SecretTemplatesPerApp:          map[string]*TemplateFile{},
-		TemplatePatchesPerInstallation: map[string][]*TemplateFile{},
-		SecretTemplatePatchesPerApp:    map[string]*TemplateFile{},
+		AppsPerInstallation:                  map[string][]string{},
+		ConfigPatchesPerInstallation:         map[string]*ValueFile{},
+		SecretsPerInstallation:               map[string]*ValueFile{},
+		TemplatesPerApp:                      map[string]*TemplateFile{},
+		SecretTemplatesPerApp:                map[string]*TemplateFile{},
+		TemplatePatchesPerInstallation:       map[string][]*TemplateFile{},
+		SecretTemplatePatchesPerInstallation: map[string][]*TemplateFile{},
 	}
 
 	// collect config.yaml
@@ -119,7 +120,7 @@ func NewDiscovery(fs generator.Filesystem) (*Discovery, error) {
 		d.SecretsPerInstallation[inst.Name()] = secret
 	}
 
-	// collect default/apps/*/configmap-values.yaml.template files
+	// collect default/apps/*/{configmap,secret}-values.yaml.template files
 	defaultAppDirs, err := fs.ReadDir("default/apps/")
 	if err != nil {
 		return nil, microerror.Mask(err)
@@ -140,15 +141,28 @@ func NewDiscovery(fs generator.Filesystem) (*Discovery, error) {
 		}
 		d.Templates = append(d.Templates, template)
 		d.TemplatesPerApp[app.Name()] = template
+
+		filepath = fmt.Sprintf("default/apps/%s/secret-values.yaml.template", app.Name())
+		body, err = fs.ReadFile(filepath)
+		if err != nil {
+			return nil, microerror.Mask(err)
+		}
+		secret, err := NewTemplateFile(filepath, body)
+		if err != nil {
+			return nil, microerror.Mask(err)
+		}
+		d.SecretTemplates = append(d.SecretTemplates, secret)
+		d.SecretTemplatesPerApp[app.Name()] = secret
 	}
 
-	// collect installations/*/apps/*/configmap-values.yaml.patch files
+	// collect installations/*/apps/*/{configmap,secret}-values.yaml.patch files
 	for _, inst := range installationDirs {
 		if !inst.IsDir() {
 			continue
 		}
 		d.AppsPerInstallation[inst.Name()] = []string{}
 		d.TemplatePatchesPerInstallation[inst.Name()] = []*TemplateFile{}
+		d.SecretTemplatePatchesPerInstallation[inst.Name()] = []*TemplateFile{}
 		appDirs, err := fs.ReadDir("default/apps/")
 		if err != nil {
 			return nil, microerror.Mask(err)
@@ -159,6 +173,7 @@ func NewDiscovery(fs generator.Filesystem) (*Discovery, error) {
 			}
 			uniqueApps[app.Name()] = true
 			d.AppsPerInstallation[inst.Name()] = append(d.AppsPerInstallation[inst.Name()], app.Name())
+
 			filepath := fmt.Sprintf("installations/%s/apps/%s/configmap-values.yaml.patch", inst.Name(), app.Name())
 			body, err := fs.ReadFile(filepath)
 			if err != nil {
@@ -172,6 +187,21 @@ func NewDiscovery(fs generator.Filesystem) (*Discovery, error) {
 			d.TemplatePatchesPerInstallation[inst.Name()] = append(
 				d.TemplatePatchesPerInstallation[inst.Name()],
 				templatePatch,
+			)
+
+			filepath = fmt.Sprintf("installations/%s/apps/%s/secret-values.yaml.patch", inst.Name(), app.Name())
+			body, err = fs.ReadFile(filepath)
+			if err != nil {
+				return nil, microerror.Mask(err)
+			}
+			secretPatch, err := NewTemplateFile(filepath, body)
+			if err != nil {
+				return nil, microerror.Mask(err)
+			}
+			d.SecretTemplatePatches = append(d.SecretTemplatePatches, secretPatch)
+			d.SecretTemplatePatchesPerInstallation[inst.Name()] = append(
+				d.SecretTemplatePatchesPerInstallation[inst.Name()],
+				secretPatch,
 			)
 		}
 	}
@@ -210,6 +240,7 @@ func NewDiscovery(fs generator.Filesystem) (*Discovery, error) {
 		return nil, microerror.Mask(err)
 	}
 
+	log.Printf("KUBA: %+v", d)
 	return d, nil
 }
 
