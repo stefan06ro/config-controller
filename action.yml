@@ -1,0 +1,37 @@
+name: 'config-contoller lint'
+description: 'Lint giantswarm config'
+inputs:
+  branch:
+    description: 'Branch of giantswarm/config used to generate configuraton.'
+    required: false
+  config-version:
+    description: 'Major part of the configuration version to use for generation (e.g. "v2").'
+    required: false
+    # default: ''
+  filter-functions:
+    description: 'Enables filtering linter functions by supplying a list of patterns to match, (e.g. "Lint.*,LintUnusedConfigValues").'
+    required: false
+  github-token:
+    description: 'GitHub token to use for "opsctl create vaultconfig" calls. Defaults to the value of CONFIG_CONTROLLER_GITHUB_TOKEN env var.'
+    required: false
+  max-messages:
+    description: 'Max number of linter messages to display. Unlimited output if set to 0. Defaults to 50.'
+    required: false
+  no-func-names:
+    description: 'Disables output of linter function names.'
+    required: false
+  only-errors:
+    description: 'Enables linter to output only errors, omitting suggestions.'
+    required: false
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  entrypoint: './config-controller lint'
+  args:
+    - '--branch="'${{ inputs.branch }}'"'
+    - '--config-version="'${{ inputs.config-version }}'"'
+    - '--filter-functions="'${{ inputs.filter-functions }}'"'
+    - '--github-token="'${{ inputs.github-token }}'"'
+    - '--max-messages="'${{ inputs.max-messages }}'"'
+    - '--no-func-names="'${{ inputs.no-func-names }}'"'
+    - '--only-errors="'${{ inputs.only-errors }}'"'
