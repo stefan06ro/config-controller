@@ -2,7 +2,6 @@ package lint
 
 import (
 	"fmt"
-	"log"
 	"sort"
 
 	"github.com/giantswarm/microerror"
@@ -35,6 +34,19 @@ type Discovery struct {
 
 func (d Discovery) GetAppTemplatePatch(installation, app string) (*TemplateFile, bool) {
 	templatePatches, ok := d.TemplatePatchesPerInstallation[installation]
+	if !ok {
+		return nil, false
+	}
+	for _, patch := range templatePatches {
+		if patch.app == app {
+			return patch, true
+		}
+	}
+	return nil, false
+}
+
+func (d Discovery) GetAppSecretTemplatePatch(installation, app string) (*TemplateFile, bool) {
+	templatePatches, ok := d.SecretTemplatePatchesPerInstallation[installation]
 	if !ok {
 		return nil, false
 	}
@@ -240,7 +252,6 @@ func NewDiscovery(fs generator.Filesystem) (*Discovery, error) {
 		return nil, microerror.Mask(err)
 	}
 
-	log.Printf("KUBA: %+v", d)
 	return d, nil
 }
 
@@ -257,14 +268,14 @@ func (d *Discovery) populateValuePaths() error {
 		}
 	}
 	// 2. Check templates for all apps x installations, then set UsedBy fields
-	// in Config or ConfigPatches
+	// in Config, ConfigPatches
 	for _, installation := range d.Installations {
-		for _, app := range d.Apps {
-			configPatch, ok := d.ConfigPatchesPerInstallation[installation]
-			if !ok {
-				configPatch = nil
-			}
+		configPatch, ok := d.ConfigPatchesPerInstallation[installation]
+		if !ok {
+			configPatch = nil
+		}
 
+		for _, app := range d.Apps {
 			// mark all fields used by app template's patch
 			if templatePatch, ok := d.GetAppTemplatePatch(installation, app); ok {
 				populatePathsWithUsedBy(templatePatch, d.Config, configPatch)
@@ -273,6 +284,26 @@ func (d *Discovery) populateValuePaths() error {
 			// mark all fields used by the app's default template
 			if defaultTemplate, ok := d.TemplatesPerApp[app]; ok {
 				populatePathsWithUsedBy(defaultTemplate, d.Config, configPatch)
+			}
+		}
+	}
+
+	// 3. Check SECRET templates for all apps x installations, then set UsedBy fields
+	for _, installation := range d.Installations {
+		secret, ok := d.SecretsPerInstallation[installation]
+		if !ok {
+			continue
+		}
+		for _, app := range d.Apps {
+			templatePatch, ok := d.GetAppSecretTemplatePatch(installation, app)
+			if ok {
+				populateSecretPathsWithUsedBy(templatePatch, secret, nil)
+			} else {
+				templatePatch = nil
+			}
+
+			if defaultTemplate, ok := d.SecretTemplatesPerApp[app]; ok {
+				populateSecretPathsWithUsedBy(defaultTemplate, secret, templatePatch)
 			}
 		}
 	}
@@ -299,6 +330,27 @@ func populatePathsWithUsedBy(source *TemplateFile, config, configPatch *ValueFil
 		}
 
 		// value is missing from config; linter will check if it's patched
+		templatePath.MayBeMissing = true
+	}
+}
+
+func populateSecretPathsWithUsedBy(source *TemplateFile, installationSecret *ValueFile, secretTemplatePatch *TemplateFile) {
+	for path, templatePath := range source.values {
+		if secretTemplatePatch != nil {
+			if _, ok := secretTemplatePatch.paths[path]; ok {
+				// path was already checked in the patch
+				continue
+			}
+		}
+
+		valuePath, valuePathOk := installationSecret.paths[path]
+		if valuePathOk {
+			// config patch exists and contains the path
+			valuePath.UsedBy = appendUniqueUsedBy(valuePath.UsedBy, source)
+			continue
+		}
+
+		// value is missing from secrets
 		templatePath.MayBeMissing = true
 	}
 }

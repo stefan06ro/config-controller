@@ -19,6 +19,9 @@ var AllLinterFunctions = []LinterFunc{
 	LintUnusedConfigPatchValues,
 	LintUndefinedTemplateValues,
 	LintUndefinedTemplatePatchValues,
+	LintUnusedSecretValues,
+	LintUndefinedSecretTemplateValues,
+	LintUndefinedSecretTemplatePatchValues,
 	LintIncludeFiles,
 }
 
@@ -84,6 +87,51 @@ func LintUnusedConfigValues(d *Discovery) (messages LinterMessages) {
 			msg := NewMessage(d.Config.filepath, path, "is used by just one app: %s", valuePath.UsedBy[0].app).
 				WithDescription("consider moving this value to %s template or template patch", valuePath.UsedBy[0].app)
 			messages = append(messages, msg)
+		}
+	}
+	return messages
+}
+
+func LintUnusedSecretValues(d *Discovery) (messages LinterMessages) {
+	if len(d.Installations) == 0 {
+		return // what's the point, nothing is defined
+	}
+	for _, secretFile := range d.Secrets {
+		for path, valuePath := range secretFile.paths {
+			if len(valuePath.UsedBy) == 0 {
+				messages = append(messages, NewError(secretFile.filepath, path, "is unused"))
+			} else if len(valuePath.UsedBy) == 1 {
+				msg := NewMessage(secretFile.filepath, path, "is used by just one app: %s", valuePath.UsedBy[0].app).
+					WithDescription("consider moving this value to %s secret-values patch", valuePath.UsedBy[0].app)
+				messages = append(messages, msg)
+			}
+
+		}
+	}
+	return messages
+}
+
+func LintUndefinedSecretTemplateValues(d *Discovery) (messages LinterMessages) {
+	for _, template := range d.SecretTemplates {
+		for path, value := range template.values {
+			if !value.MayBeMissing {
+				continue
+			}
+
+			messages = append(messages, NewError(template.filepath, path, "is templated but never configured"))
+		}
+	}
+	return messages
+}
+
+func LintUndefinedSecretTemplatePatchValues(d *Discovery) (messages LinterMessages) {
+	for _, template := range d.SecretTemplatePatches {
+		for path, value := range template.values {
+			if !value.MayBeMissing {
+				continue
+			}
+
+			messages = append(messages, NewError(template.filepath, path, "is templated but never configured"))
 		}
 	}
 	return messages
