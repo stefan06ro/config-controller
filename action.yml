@@ -1,4 +1,4 @@
-name: 'config-contoller lint'
+name: 'giantswarm/config-contoller lint'
 description: 'Lint giantswarm config'
 inputs:
   branch:
