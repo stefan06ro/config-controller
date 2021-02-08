@@ -2,7 +2,6 @@ package lint
 
 import (
 	"bytes"
-	"fmt"
 	"html/template"
 	"regexp"
 	"strings"
@@ -49,6 +48,8 @@ type TemplateFile struct {
 	values map[string]*TemplateValue
 	// paths map contains all paths in template extracted by valuemodifier/path
 	paths map[string]bool
+	// includes contains names of all include files used by this template
+	includes []string
 
 	sourceBytes    []byte
 	sourceTemplate *template.Template
@@ -169,6 +170,7 @@ func NewTemplateFile(filepath string, body []byte) (*TemplateFile, error) {
 		if err != nil {
 			return nil, microerror.Mask(err)
 		}
+		tf.includes = includes.Filepaths
 
 		c := pathmodifier.Config{
 			InputBytes: output.Bytes(),
@@ -177,7 +179,7 @@ func NewTemplateFile(filepath string, body []byte) (*TemplateFile, error) {
 
 		svc, err := pathmodifier.New(c)
 		if err != nil {
-			fmt.Println(output.String())
+			// TODO: why do we get errors? Possibly YAML converter, so let's print pretty errors.
 			return nil, microerror.Mask(err)
 		}
 
@@ -223,6 +225,7 @@ type includeExtract struct {
 }
 
 func (ie *includeExtract) include(filepath string, data interface{}) string {
+	filepath = "include/" + filepath + ".yaml.template"
 	ie.Filepaths = append(ie.Filepaths, filepath)
 	return ""
 }

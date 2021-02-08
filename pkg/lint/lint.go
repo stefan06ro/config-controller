@@ -19,6 +19,7 @@ var AllLinterFunctions = []LinterFunc{
 	LintUnusedConfigPatchValues,
 	LintUndefinedTemplateValues,
 	LintUndefinedTemplatePatchValues,
+	LintIncludeFiles,
 }
 
 func LintDuplicateConfigValues(d *Discovery) (messages LinterMessages) {
@@ -121,6 +122,53 @@ func LintUndefinedTemplatePatchValues(d *Discovery) (messages LinterMessages) {
 			messages = append(messages, NewError(templatePatch.filepath, path, "is templated but never configured"))
 		}
 	}
+	return messages
+}
+
+func LintIncludeFiles(d *Discovery) (messages LinterMessages) {
+	used := map[string]bool{}
+	exist := map[string]bool{}
+	for _, includeFile := range d.Include {
+		exist[includeFile.filepath] = true
+		for _, filepath := range includeFile.includes {
+			used[filepath] = true
+		}
+	}
+
+	for _, template := range d.Templates {
+		for _, filepath := range template.includes {
+			used[filepath] = true
+		}
+	}
+
+	for _, templatePatch := range d.TemplatePatches {
+		for _, filepath := range templatePatch.includes {
+			used[filepath] = true
+		}
+	}
+
+	for _, includeFile := range d.Include {
+		for _, filepath := range includeFile.includes {
+			used[filepath] = true
+		}
+	}
+
+	if reflect.DeepEqual(exist, used) {
+		return messages
+	}
+
+	for filepath := range exist {
+		if _, ok := used[filepath]; !ok {
+			messages = append(messages, NewError(filepath, "*", "is never included"))
+		}
+	}
+
+	for filepath := range used {
+		if _, ok := exist[filepath]; !ok {
+			messages = append(messages, NewError(filepath, "*", "is included but does not exist"))
+		}
+	}
+
 	return messages
 }
 
