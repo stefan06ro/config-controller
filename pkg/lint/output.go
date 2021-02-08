@@ -72,7 +72,7 @@ func (lm LinterMessage) Message(withCaller, withDescription bool) string {
 
 	desc := ""
 	if lm.description != "" && withDescription {
-		desc = "\n" + lm.description
+		desc = "\n" + strings.Repeat(" ", len(caller)) + lm.description
 	}
 
 	return fmt.Sprintf(
