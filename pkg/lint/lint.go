@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"regexp"
 	"runtime"
+	"strings"
 )
 
 const (
@@ -22,6 +23,7 @@ var AllLinterFunctions = []LinterFunc{
 	LintUnusedSecretValues,
 	LintUndefinedSecretTemplateValues,
 	LintUndefinedSecretTemplatePatchValues,
+	LintUnencryptedSecretValues,
 	LintIncludeFiles,
 }
 
@@ -156,6 +158,28 @@ func LintUndefinedTemplateValues(d *Discovery) (messages LinterMessages) {
 				continue
 			}
 			messages = append(messages, NewError(template.filepath, path, "is templated but never configured"))
+		}
+	}
+	return messages
+}
+
+func LintUnencryptedSecretValues(d *Discovery) (messages LinterMessages) {
+	if len(d.Installations) == 0 {
+		return // what's the point, nothing is defined
+	}
+	for _, secretFile := range d.Secrets {
+		for path, valuePath := range secretFile.paths {
+			stringValue, ok := (valuePath.Value).(string)
+			if !ok {
+				continue
+			}
+			if !strings.HasPrefix(stringValue, "vault:v1:") {
+				messages = append(
+					messages,
+					NewError(secretFile.filepath, path, "is not encrypted with Vault").
+						WithDescription("valid secret values are encrypted with installation Vault's token and start with \"vault:v1:\" prefix"),
+				)
+			}
 		}
 	}
 	return messages

@@ -295,16 +295,10 @@ func (d *Discovery) populateValuePaths() error {
 			continue
 		}
 		for _, app := range d.Apps {
-			templatePatch, ok := d.GetAppSecretTemplatePatch(installation, app)
-			if ok {
-				populateSecretPathsWithUsedBy(templatePatch, secret, nil)
-			} else {
-				templatePatch = nil
-			}
+			defaultTemplate := d.SecretTemplatesPerApp[app]
+			templatePatch, _ := d.GetAppSecretTemplatePatch(installation, app)
 
-			if defaultTemplate, ok := d.SecretTemplatesPerApp[app]; ok {
-				populateSecretPathsWithUsedBy(defaultTemplate, secret, templatePatch)
-			}
+			populateSecretPathsWithUsedBy(secret, defaultTemplate, templatePatch)
 		}
 	}
 
@@ -334,24 +328,32 @@ func populatePathsWithUsedBy(source *TemplateFile, config, configPatch *ValueFil
 	}
 }
 
-func populateSecretPathsWithUsedBy(source *TemplateFile, installationSecret *ValueFile, secretTemplatePatch *TemplateFile) {
-	for path, templatePath := range source.values {
-		if secretTemplatePatch != nil {
-			if _, ok := secretTemplatePatch.paths[path]; ok {
-				// path was already checked in the patch
+func populateSecretPathsWithUsedBy(installationSecret *ValueFile, defaultTemplate, templatePatch *TemplateFile) {
+	if templatePatch != nil {
+		for path, value := range templatePatch.values {
+			valuePath, valuePathOk := installationSecret.paths[path]
+			if valuePathOk {
+				valuePath.UsedBy = appendUniqueUsedBy(valuePath.UsedBy, templatePatch)
 				continue
 			}
+			value.MayBeMissing = true
+		}
+	}
+
+	if defaultTemplate != nil {
+		for path, value := range defaultTemplate.values {
+			if _, ok := templatePatch.paths[path]; ok {
+				// already checked; value is overriden by patch in this case
+				continue
+			}
+			valuePath, valuePathOk := installationSecret.paths[path]
+			if valuePathOk {
+				valuePath.UsedBy = appendUniqueUsedBy(valuePath.UsedBy, defaultTemplate)
+				continue
+			}
+			value.MayBeMissing = true
 		}
 
-		valuePath, valuePathOk := installationSecret.paths[path]
-		if valuePathOk {
-			// config patch exists and contains the path
-			valuePath.UsedBy = appendUniqueUsedBy(valuePath.UsedBy, source)
-			continue
-		}
-
-		// value is missing from secrets
-		templatePath.MayBeMissing = true
 	}
 }
 
