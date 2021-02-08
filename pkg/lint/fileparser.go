@@ -184,6 +184,9 @@ func NewTemplateFile(filepath string, body []byte) (*TemplateFile, error) {
 		svc, err := pathmodifier.New(c)
 		if err != nil {
 			// try to pretty print offending yaml
+			fmt.Println("debug ---")
+			fmt.Println(output.String())
+			fmt.Println("debug ---")
 			var yamlOut interface{}
 			yamlErr := yaml.Unmarshal(output.Bytes(), &yamlOut)
 
@@ -200,9 +203,10 @@ func NewTemplateFile(filepath string, body []byte) (*TemplateFile, error) {
 			if convErr != nil {
 				return nil, microerror.Mask(err)
 			}
-			lines := strings.Split(output.String(), "\n")
 
+			lines := strings.Split(output.String(), "\n")
 			fmt.Println(red(yamlErr.Error()))
+			fmt.Println("In " + filepath)
 			if lineNo > 1 {
 				fmt.Println("> " + lines[lineNo-2])
 			}
@@ -270,13 +274,13 @@ func dummyFuncMap() template.FuncMap {
 	dummy := template.FuncMap{}
 	for fName := range sprig.FuncMap() {
 		dummy[fName] = func(args ...interface{}) string {
-			return fName
+			return ""
 		}
 	}
 	// built-ins, which might be affected by interface comparison
 	for _, fName := range []string{"eq", "ne"} {
 		dummy[fName] = func(args ...interface{}) string {
-			return fName
+			return ""
 		}
 	}
 	return dummy
