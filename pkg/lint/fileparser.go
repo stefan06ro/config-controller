@@ -2,6 +2,7 @@ package lint
 
 import (
 	"bytes"
+	"fmt"
 	"html/template"
 	"regexp"
 	"strings"
@@ -14,7 +15,7 @@ import (
 )
 
 var (
-	fMap                = sprig.FuncMap()
+	fMap                = dummyFuncMap()
 	includes            = &includeExtract{[]string{}}
 	templatePathPattern = regexp.MustCompile(`(\.[a-zA-Z].[a-zA-Z0-9_\.]+)`)
 )
@@ -131,7 +132,7 @@ func NewTemplateFile(filepath string, body []byte) (*TemplateFile, error) {
 		t, err := template.
 			New(filepath).
 			Funcs(fMap).
-			Option("missingkey=invalid").
+			Option("missingkey=zero").
 			Parse(string(body))
 		if err != nil {
 			return nil, microerror.Mask(err)
@@ -176,6 +177,7 @@ func NewTemplateFile(filepath string, body []byte) (*TemplateFile, error) {
 
 		svc, err := pathmodifier.New(c)
 		if err != nil {
+			fmt.Println(output.String())
 			return nil, microerror.Mask(err)
 		}
 
@@ -199,9 +201,8 @@ func NewTemplateFile(filepath string, body []byte) (*TemplateFile, error) {
 			tf.app = elements[3]
 		} else if strings.HasPrefix(filepath, "default") {
 			tf.app = elements[2]
-		} else {
-			return nil, microerror.Maskf(executionFailedError, "given file is not a template: %q", filepath)
 		}
+		// else it's an include file and has neither app nor installation
 	}
 
 	return tf, nil
@@ -228,4 +229,21 @@ func (ie *includeExtract) include(filepath string, data interface{}) string {
 
 func (ie *includeExtract) clear() {
 	ie.Filepaths = []string{}
+}
+
+func dummyFuncMap() template.FuncMap {
+	// sprig.funcMap
+	dummy := template.FuncMap{}
+	for fName := range sprig.FuncMap() {
+		dummy[fName] = func(args ...interface{}) string {
+			return fName
+		}
+	}
+	// built-ins, which might be affected by interface comparison
+	for _, fName := range []string{"eq", "ne"} {
+		dummy[fName] = func(args ...interface{}) string {
+			return fName
+		}
+	}
+	return dummy
 }
