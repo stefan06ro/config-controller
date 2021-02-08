@@ -2,21 +2,25 @@ package lint
 
 import (
 	"bytes"
+	"fmt"
 	"html/template"
 	"regexp"
+	"strconv"
 	"strings"
 	"text/template/parse"
 
 	"github.com/Masterminds/sprig"
+	"github.com/ghodss/yaml"
 
 	"github.com/giantswarm/microerror"
 	pathmodifier "github.com/giantswarm/valuemodifier/path"
 )
 
 var (
-	fMap                = dummyFuncMap()
-	includes            = &includeExtract{[]string{}}
-	templatePathPattern = regexp.MustCompile(`(\.[a-zA-Z].[a-zA-Z0-9_\.]+)`)
+	fMap                 = dummyFuncMap()
+	includes             = &includeExtract{[]string{}}
+	templatePathPattern  = regexp.MustCompile(`(\.[a-zA-Z].[a-zA-Z0-9_\.]+)`)
+	yamlErrorLinePattern = regexp.MustCompile(`yaml: line (\d+)`)
 )
 
 func init() {
@@ -179,7 +183,30 @@ func NewTemplateFile(filepath string, body []byte) (*TemplateFile, error) {
 
 		svc, err := pathmodifier.New(c)
 		if err != nil {
-			// TODO: why do we get errors? Possibly YAML converter, so let's print pretty errors.
+			// try to pretty print offending yaml
+			var yamlOut interface{}
+			yamlErr := yaml.Unmarshal(output.Bytes(), &yamlOut)
+
+			matches := yamlErrorLinePattern.FindAllStringSubmatch(yamlErr.Error(), -1)
+			if len(matches) == 0 {
+				return nil, microerror.Mask(err)
+			}
+
+			lineNo, convErr := strconv.Atoi(matches[0][1])
+			if convErr != nil {
+				return nil, microerror.Mask(err)
+			}
+			lines := strings.Split(output.String(), "\n")
+
+			fmt.Println(red(yamlErr.Error()))
+			if lineNo > 1 {
+				fmt.Println("> " + lines[lineNo-2])
+			}
+			fmt.Println("> " + red(lines[lineNo-1]))
+			if lineNo < len(lines)-2 {
+				fmt.Println("> " + lines[lineNo])
+			}
+
 			return nil, microerror.Mask(err)
 		}
 
