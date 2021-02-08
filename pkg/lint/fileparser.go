@@ -15,13 +15,12 @@ import (
 
 var (
 	fMap                = sprig.FuncMap()
+	includes            = &includeExtract{[]string{}}
 	templatePathPattern = regexp.MustCompile(`(\.[a-zA-Z].[a-zA-Z0-9_\.]+)`)
 )
 
 func init() {
-	fMap["include"] = func(f string, data interface{}) string {
-		return ""
-	}
+	fMap["include"] = includes.include
 }
 
 type ValueFile struct {
@@ -128,6 +127,7 @@ func NewTemplateFile(filepath string, body []byte) (*TemplateFile, error) {
 	values := map[string]*TemplateValue{}
 	paths := map[string]bool{}
 	{
+		includes.clear()
 		t, err := template.
 			New(filepath).
 			Funcs(fMap).
@@ -159,35 +159,33 @@ func NewTemplateFile(filepath string, body []byte) (*TemplateFile, error) {
 		}
 
 		// extract all paths
-		if strings.HasSuffix(filepath, "values.yaml.patch") {
-			output := bytes.NewBuffer([]byte{})
-			var data interface{}
-			// Render template without values. All templated values will be
-			// replaced by default zero values: "" for string, 0 for int, false
-			// for bool etc.
-			err = t.Execute(output, data)
-			if err != nil {
-				return nil, microerror.Mask(err)
-			}
+		output := bytes.NewBuffer([]byte{})
+		var data interface{}
+		// Render template without values. All templated values will be
+		// replaced by default zero values: "" for string, 0 for int, false
+		// for bool etc.
+		err = t.Execute(output, data)
+		if err != nil {
+			return nil, microerror.Mask(err)
+		}
 
-			c := pathmodifier.Config{
-				InputBytes: output.Bytes(),
-				Separator:  ".",
-			}
+		c := pathmodifier.Config{
+			InputBytes: output.Bytes(),
+			Separator:  ".",
+		}
 
-			svc, err := pathmodifier.New(c)
-			if err != nil {
-				return nil, microerror.Mask(err)
-			}
+		svc, err := pathmodifier.New(c)
+		if err != nil {
+			return nil, microerror.Mask(err)
+		}
 
-			pathList, err := svc.All()
-			if err != nil {
-				return nil, microerror.Mask(err)
-			}
+		pathList, err := svc.All()
+		if err != nil {
+			return nil, microerror.Mask(err)
+		}
 
-			for _, p := range pathList {
-				paths[p] = true
-			}
+		for _, p := range pathList {
+			paths[p] = true
 		}
 	}
 	tf.values = values
@@ -214,4 +212,20 @@ func NormalPath(path string) string {
 		path = strings.TrimPrefix(path, ".")
 	}
 	return path
+}
+
+// includeExtract is a helper struct, with a method passed to template's
+// funcmap. It collects filepaths used as arguments to "include" function in
+// templates.
+type includeExtract struct {
+	Filepaths []string
+}
+
+func (ie *includeExtract) include(filepath string, data interface{}) string {
+	ie.Filepaths = append(ie.Filepaths, filepath)
+	return ""
+}
+
+func (ie *includeExtract) clear() {
+	ie.Filepaths = []string{}
 }
