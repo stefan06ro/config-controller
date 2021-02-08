@@ -187,6 +187,10 @@ func NewTemplateFile(filepath string, body []byte) (*TemplateFile, error) {
 			var yamlOut interface{}
 			yamlErr := yaml.Unmarshal(output.Bytes(), &yamlOut)
 
+			if yamlErr == nil {
+				return nil, microerror.Mask(err)
+			}
+
 			matches := yamlErrorLinePattern.FindAllStringSubmatch(yamlErr.Error(), -1)
 			if len(matches) == 0 {
 				return nil, microerror.Mask(err)
