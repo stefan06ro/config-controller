@@ -46,4 +46,8 @@ require (
 	sigs.k8s.io/yaml v1.2.0
 )
 
-replace sigs.k8s.io/cluster-api => github.com/giantswarm/cluster-api v0.3.10-gs
+replace (
+	github.com/coreos/etcd v3.3.10+incompatible => github.com/coreos/etcd v3.3.25+incompatible
+	github.com/coreos/etcd v3.3.13+incompatible => github.com/coreos/etcd v3.3.25+incompatible
+	sigs.k8s.io/cluster-api => github.com/giantswarm/cluster-api v0.3.10-gs
+)
