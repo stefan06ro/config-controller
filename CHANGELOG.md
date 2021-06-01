@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Allow for raw config generation from CLI.
 
+### Changed
+
+- Prepare helm values to configuration management.
+- Update architect-orb to v3.0.0.
+
 ## [0.2.11] - 2021-04-16
 
 ### Fixed

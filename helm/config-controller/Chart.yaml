@@ -6,3 +6,4 @@ name: "config-controller"
 version: "[[ .Version ]]"
 annotations:
   application.giantswarm.io/team: "biscuit"
+  config.giantswarm.io/version: 1.x.x

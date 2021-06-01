@@ -1,10 +1,6 @@
 image:
   name: "giantswarm/config-controller"
   tag: "[[ .Version ]]"
-Installation:
-  V1:
-    Registry:
-      Domain: quay.io
 
 k8sJwtToVaultTokenImage:
   name: giantswarm/k8s-jwt-to-vault-token
@@ -18,3 +14,15 @@ pod:
 project:
   branch: "[[ .Branch ]]"
   commit: "[[ .SHA ]]"
+
+registry:
+  domain: docker.io
+
+managementCluster:
+  name: ""
+
+vault:
+  address: ""
+
+github:
+  token: ""
