@@ -15,7 +15,7 @@ data:
         address: 'http://0.0.0.0:8000'
     service:
       app:
-        unique: {{ include "resource.app.unique" . }}
+        unique: true
       installation:
         name: {{ .Values.managementCluster.name }}
       kubernetes:
