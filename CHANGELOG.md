@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2021-06-02
+
 ### Added
 
 - Allow for raw config generation from CLI.
@@ -120,7 +122,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Create CLI/daemon scaffolding.
 - Generate application configuration using `generate` command.
 
-[Unreleased]: https://github.com/giantswarm/config-controller/compare/v0.2.11...HEAD
+[Unreleased]: https://github.com/giantswarm/config-controller/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/giantswarm/config-controller/compare/v0.2.11...v0.3.0
 [0.2.11]: https://github.com/giantswarm/config-controller/compare/v0.2.10...v0.2.11
 [0.2.10]: https://github.com/giantswarm/config-controller/compare/v0.2.9...v0.2.10
 [0.2.9]: https://github.com/giantswarm/config-controller/compare/v0.2.8...v0.2.9
