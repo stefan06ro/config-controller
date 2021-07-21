@@ -47,6 +47,7 @@ require (
 replace (
 	github.com/coreos/etcd v3.3.10+incompatible => github.com/coreos/etcd v3.3.25+incompatible
 	github.com/coreos/etcd v3.3.13+incompatible => github.com/coreos/etcd v3.3.25+incompatible
+	github.com/dgrijalva/jwt-go => github.com/form3tech-oss/jwt-go v3.2.1+incompatible
 	github.com/gogo/protobuf => github.com/gogo/protobuf v1.3.2 // CVE-2021-3121
 	github.com/opencontainers/runc v0.1.1 => github.com/opencontainers/runc v1.0.0-rc93
 	sigs.k8s.io/cluster-api => github.com/giantswarm/cluster-api v0.3.10-gs

@@ -43,7 +43,7 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 
 	var vaultClient *vaultapi.Client
 	{
-		vaultClient, err = createVaultClientUsingOpsctl(ctx, r.flag.GitHubToken, r.flag.Installation)
+		vaultClient, err = createVaultClientUsingOpsctl(ctx, r.flag.GitHubToken, r.flag.SSHUser, r.flag.Installation)
 		if err != nil {
 			return microerror.Mask(err)
 		}
