@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add a flag to allow the user to be passed to `opsctl` when generating locally.
 
+### Fixed
+
+- Fix fetching the latest tag for a version range.
+
 ## [0.3.2] - 2021-06-03
 
 ### Changed

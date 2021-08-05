@@ -104,7 +104,7 @@ func (g *GitHub) getTags(ctx context.Context, owner, name, filter string) ([]str
 	const query = `
 		query($owner:String!, $name:String!, $filter:String!, $after:String) {
 		  repository(name: $name, owner: $owner) {
-		    refs(first: 100, refPrefix: "refs/tags/", after: $after, query: $filter, direction: ASC) {
+		    refs(first: 100, refPrefix: "refs/tags/", after: $after, query: $filter, direction: DESC) {
 		      edges {
 		        cursor
 		        node {
