@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Add deprecation notice in favor of `konfigure`.
+
 ## [0.4.0] - 2021-08-09
 
 ## [0.3.3] - 2021-08-05
