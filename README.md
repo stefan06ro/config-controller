@@ -3,6 +3,4 @@
 
 # config-controller
 
-Controller managing Control Plane cluster configuration.
-
-Documentation: [intranet](https://intranet.giantswarm.io/docs/dev-and-releng/configuration-management/) | [GitHub](https://github.com/giantswarm/giantswarm/blob/master/content/docs/dev-and-releng/configuration-management/_index.md)
+`config-controller` has been deprecated in favor of [konfigure](https://github.com/giantswarm/konfigure).
