@@ -33,15 +33,11 @@ require (
 	github.com/tidwall/pretty v1.0.1 // indirect
 	go.mongodb.org/mongo-driver v1.4.2 // indirect
 	go.uber.org/zap v1.14.1 // indirect
-	golang.org/x/crypto v0.0.0-20201002170205-7f63de1d35b0 // indirect
-	golang.org/x/lint v0.0.0-20200302205851-738671d3881b // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
-	honnef.co/go/tools v0.0.1-2020.1.3 // indirect
-	k8s.io/api v0.18.9
-	k8s.io/apimachinery v0.18.9
-	k8s.io/client-go v0.18.9
-	sigs.k8s.io/controller-runtime v0.6.3
-	sigs.k8s.io/yaml v1.2.0
+	k8s.io/api v0.20.11
+	k8s.io/apimachinery v0.20.11
+	k8s.io/client-go v0.20.11
+	sigs.k8s.io/controller-runtime v0.6.5
+	sigs.k8s.io/yaml v1.3.0
 )
 
 replace (
